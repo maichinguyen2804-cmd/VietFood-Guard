@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard - VietFood Guard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; }
+        .panel { background-color: #1e293b; border: 1px solid #334155; }
+        .camera-box { position: relative; background-color: #000; border-radius: 0.75rem; overflow: hidden; aspect-ratio: 16/9; }
+        .cam-label { position: absolute; top: 12px; left: 12px; background: rgba(15, 23, 42, 0.75); padding: 4px 10px; font-size: 0.75rem; border-radius: 6px; color: white; font-weight: bold; border: 1px solid #475569; backdrop-filter: blur(4px); }
+        .status-dot { height: 8px; width: 8px; background-color: #22c55e; border-radius: 50%; display: inline-block; margin-right: 6px; box-shadow: 0 0 8px #22c55e; }
+        /* Thanh cuộn tàng hình, chỉ hiện khi cuộn */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="h-screen flex flex-col p-4 md:p-6 overflow-hidden">
+    <header class="flex justify-between items-center mb-6 panel p-4 rounded-2xl shadow-lg shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="text-4xl">🛡️</div>
+            <div>
+                <h1 class="text-2xl font-black text-white tracking-wide">VietFood <span class="text-blue-500">Guard</span></h1>
+                <p class="text-xs text-gray-400 font-medium mt-1">Hệ thống Giám sát Vệ sinh An toàn Thực phẩm AI 24/7</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="font-bold text-blue-400 text-lg">Chuỗi Nhà hàng Kim Bảo</p>
+            <p class="text-xs text-gray-400 mt-1 flex items-center justify-end"><span class="status-dot"></span>Hệ thống máy chủ ổn định</p>
+        </div>
+    </header>
+
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
+        
+        <div class="lg:col-span-3 panel p-5 rounded-2xl flex flex-col shadow-lg min-h-0">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-3 shrink-0">
+                <h2 class="text-lg font-bold text-gray-100 flex items-center gap-2">🌐 Quản lý Camera Trực tiếp</h2>
+                <span class="bg-blue-900/50 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-800">4 Camera Online</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1 overflow-y-auto pr-2 pb-4">
+                
+                <div class="camera-box border-2 border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.2)]">
+                    <div class="cam-label flex items-center"><span class="status-dot"></span>CAM 01: Bếp Chính (Live AI)</div>
+                    <img src="/video_feed" class="w-full h-full object-cover">
+                </div>
+
+                <div class="camera-box border border-gray-700">
+                    <div class="cam-label flex items-center text-gray-300"><span class="status-dot" style="background-color: #eab308; box-shadow: 0 0 8px #eab308;"></span>CAM 02: Khu Sơ Chế</div>
+                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-900/50">
+                        <span class="text-3xl mb-2">⏳</span>
+                        <span class="text-sm">Đang chờ kết nối luồng RTSP...</span>
+                    </div>
+                </div>
+
+                <div class="camera-box border border-gray-700">
+                    <div class="cam-label flex items-center text-gray-300"><span class="status-dot" style="background-color: #3b82f6; box-shadow: 0 0 8px #3b82f6;"></span>CAM 03: Kho Lạnh</div>
+                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-900/50">
+                        <span class="text-3xl mb-2">❄️</span>
+                        <span class="text-sm">Không phát hiện chuyển động</span>
+                    </div>
+                </div>
+
+                <div class="camera-box border border-gray-700">
+                    <div class="cam-label flex items-center text-gray-300"><span class="status-dot" style="background-color: #3b82f6; box-shadow: 0 0 8px #3b82f6;"></span>CAM 04: Quầy Phục Vụ</div>
+                    <div class="w-full h-full flex flex-col items-center justify-center text-gray-500 bg-gray-900/50">
+                        <span class="text-3xl mb-2">☕</span>
+                        <span class="text-sm">Hoạt động bình thường</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 flex flex-col gap-6 min-h-0">
+            
+            <div class="panel p-6 rounded-2xl border-t-4 border-red-500 text-center shadow-lg relative overflow-hidden shrink-0">
+                <div class="absolute top-0 right-0 w-16 h-16 bg-red-500/10 rounded-bl-full"></div>
+                <p class="text-gray-400 font-bold uppercase tracking-widest text-xs mb-3">Ca vi phạm hôm nay</p>
+                <h3 id="total-today" class="text-7xl font-black text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.3)]">0</h3>
+                <p class="text-[11px] text-gray-500 mt-3 font-medium bg-gray-800/50 inline-block px-3 py-1 rounded-full">🟢 Live Auto-Sync</p>
+            </div>
+
+            <div class="panel p-5 rounded-2xl flex-1 flex flex-col min-h-0 shadow-lg">
+                <h3 class="font-bold mb-4 border-b border-gray-700 pb-3 text-blue-400 flex items-center gap-2 shrink-0">
+                    <span>⚠️ Nhật ký vi phạm</span>
+                </h3>
+                <div id="history-list" class="space-y-3 overflow-y-auto pr-2 flex-1 text-sm pb-2">
+                    <div class="text-center text-gray-500 mt-10">
+                        <span class="text-2xl block mb-2">✨</span>
+                        Khu vực an toàn. Chưa có vi phạm.
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        async function updateStats() {
+            try {
+                const res = await fetch('/stats?t=' + new Date().getTime());
+                const data = await res.json();
+                
+                document.getElementById('total-today').innerText = data.total_today;
+
+                const historyDiv = document.getElementById('history-list');
+                if(data.history.length === 0) {
+                    historyDiv.innerHTML = '<div class="text-center text-gray-500 mt-10"><span class="text-2xl block mb-2">✨</span>Khu vực an toàn. Chưa có vi phạm.</div>';
+                    return;
+                }
+
+                historyDiv.innerHTML = data.history.map(item => `
+                    <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/50 hover:border-slate-600 transition duration-300">
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-red-400 font-bold text-sm bg-red-900/20 px-2 py-0.5 rounded">${item.type}</span>
+                            <span class="text-[10px] text-gray-400 font-mono bg-slate-900 px-2 py-1 rounded border border-slate-700">${item.time.split(' ')[1]}</span>
+                        </div>
+                        <div class="flex flex-col gap-1 mt-2 bg-slate-900/50 p-2 rounded-lg">
+                            <span class="text-xs text-blue-300 font-medium">👤 ${item.staff_name}</span>
+                            <span class="text-[11px] text-gray-400">📍 ${item.location}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error("Lỗi đồng bộ dữ liệu: ", e);
+            }
+        }
+        setInterval(updateStats, 2000); 
+        updateStats();
+    </script>
+</body>
+</html>
