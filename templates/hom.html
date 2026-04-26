@@ -1,107 +1,804 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VietFood Guard - Tiêu chuẩn Vàng cho Bếp ăn</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VietFood Guard — Hệ Thống Giám Sát VSATTP bằng AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:       #0d1117;
+      --ink-2:     #1e2530;
+      --ink-3:     #2e3a4a;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --surface:   #f8fafc;
+      --white:     #ffffff;
+      --accent:    #16a34a;      
+      --accent-2:  #15803d;
+      --accent-lt: #dcfce7;
+      --red:       #dc2626;
+      --red-lt:    #fee2e2;
+      --amber:     #d97706;
+      --amber-lt:  #fef3c7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5vw;
+      height: 68px;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow .3s;
+    }
+    nav.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .nav-logo .shield {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; box-shadow: 0 4px 12px rgba(22,163,74,.3);
+    }
+    .nav-logo span {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px; color: var(--ink);
+      letter-spacing: -.3px;
+    }
+    .nav-logo span em { color: var(--accent); font-style: normal; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a {
+      font-size: 14px; font-weight: 500; color: var(--muted);
+      text-decoration: none; transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--ink); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 22px; border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      text-decoration: none; cursor: pointer; border: none;
+      transition: all .2s;
+    }
+    .btn-primary {
+      background: var(--accent); color: var(--white);
+      box-shadow: 0 4px 14px rgba(22,163,74,.35);
+    }
+    .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.4); }
+    .btn-ghost {
+      background: transparent; color: var(--ink);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface); }
+    .btn-lg { padding: 14px 30px; font-size: 15px; border-radius: 12px; }
+
+    /* ─── MODAL ĐĂNG KÝ (MỚI THÊM) ─── */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(13, 17, 23, 0.5); backdrop-filter: blur(8px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: all .3s;
+    }
+    .modal-backdrop.show { opacity: 1; pointer-events: auto; }
+    .modal-box {
+      background: var(--white); width: 100%; max-width: 420px; margin: 20px;
+      border-radius: 24px; padding: 36px 32px; box-shadow: 0 24px 48px rgba(0,0,0,0.15);
+      transform: translateY(20px); transition: all .3s; position: relative;
+    }
+    .modal-backdrop.show .modal-box { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border);
+      width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--muted);
+      cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s;
+    }
+    .modal-close:hover { background: var(--border); color: var(--ink); }
+    .modal-title { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--ink); margin-bottom: 4px; }
+    .form-group { margin-bottom: 16px; text-align: left; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-3); margin-bottom: 6px; }
+    .form-input {
+      width: 100%; padding: 12px 16px; border-radius: 12px; border: 1.5px solid var(--border);
+      font-size: 14px; font-family: inherit; transition: all .2s; background: var(--surface);
+    }
+    .form-input:focus { border-color: var(--accent); background: var(--white); outline: none; box-shadow: 0 0 0 4px var(--accent-lt); }
+    .btn-submit {
+      width: 100%; padding: 14px; background: var(--accent); color: white;
+      border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: all .2s; margin-top: 10px; box-shadow: 0 4px 14px rgba(22,163,74,.35);
+    }
+    .btn-submit:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.4); }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 5vw 80px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, #dcfce7 0%, transparent 60%),
+        linear-gradient(180deg, var(--white) 0%, var(--surface) 100%);
+      position: relative; overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(22,163,74,.06) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(22,163,74,.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      position: absolute; inset: 0; pointer-events: none; opacity: .4;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at center, black 0%, transparent 70%);
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border-radius: 100px;
+      background: var(--accent-lt); border: 1px solid #86efac;
+      font-size: 12px; font-weight: 600; color: var(--accent-2);
+      letter-spacing: .5px; text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(1.5); }
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(40px, 6vw, 76px);
+      line-height: 1.1; letter-spacing: -1.5px;
+      color: var(--ink);
+      max-width: 900px;
+      animation: fadeUp .7s .1s ease both;
+    }
+    .hero h1 .highlight {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .hero-sub {
+      font-size: clamp(15px, 1.5vw, 18px);
+      color: var(--muted); font-weight: 400;
+      max-width: 580px; line-height: 1.7;
+      margin: 24px auto 40px;
+      animation: fadeUp .7s .2s ease both;
+    }
+
+    .hero-cta {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center;
+      animation: fadeUp .7s .3s ease both;
+    }
+
+    .hero-stats {
+      display: flex; align-items: center; gap: 40px;
+      margin-top: 72px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      width: 100%; max-width: 640px;
+      animation: fadeUp .7s .4s ease both;
+    }
+    .stat-item { text-align: center; flex: 1; }
+    .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 36px; color: var(--ink);
+    }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 4px; }
+
+    /* Camera preview mockup */
+    .hero-visual {
+      position: relative; margin-top: 80px; width: 100%; max-width: 860px;
+      animation: fadeUp .8s .5s ease both;
+    }
+    .cam-frame {
+      background: var(--ink-2);
+      border-radius: 20px; padding: 4px;
+      box-shadow: 0 40px 80px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.1);
+      overflow: hidden;
+    }
+    .cam-inner {
+      background: #111827;
+      border-radius: 16px;
+      aspect-ratio: 16/6;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 2px; overflow: hidden; position: relative;
+    }
+    .cam-cell {
+      background: #0f172a;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .cam-cell-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,.04);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 10px; font-weight: 600; color: rgba(255,255,255,.5);
+      letter-spacing: .5px;
+    }
+    .cam-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .cam-dot.ok { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .cam-dot.warn { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .cam-dot.alert { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: pulse 1.5s infinite; }
+
+    .cam-body {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      position: relative;
+    }
+    .cam-body .icon { font-size: 28px; opacity: .2; }
+
+    .cam-alert-box {
+      position: absolute; left: 8px; right: 8px; bottom: 8px;
+      background: rgba(220,38,38,.9);
+      border-radius: 6px; padding: 6px 10px;
+      font-size: 9px; font-weight: 700; color: white;
+      text-transform: uppercase; letter-spacing: .5px;
+      display: flex; align-items: center; gap: 6px;
+      border: 1px solid rgba(255,100,100,.4);
+    }
+
+    .cam-bar {
+      background: var(--ink); padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cam-bar-left { display: flex; align-items: center; gap: 8px; }
+    .cam-bar-logo { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.7); letter-spacing: .5px; }
+    .live-badge {
+      background: #ef4444; color: white;
+      font-size: 9px; font-weight: 700; letter-spacing: .5px;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .cam-bar-right { font-size: 10px; color: rgba(255,255,255,.3); }
+
+    /* ─── SECTION COMMON ─── */
+    section { padding: 96px 5vw; }
+    .section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(30px, 3.5vw, 48px);
+      line-height: 1.15; letter-spacing: -.8px;
+      max-width: 640px;
+    }
+    .section-sub {
+      font-size: 16px; color: var(--muted); line-height: 1.7;
+      max-width: 520px; margin-top: 16px;
+    }
+
+    /* ─── PROBLEM ─── */
+    .problem { background: var(--ink); color: var(--white); }
+    .problem .section-label { color: #86efac; }
+    .problem .section-title { color: var(--white); max-width: 800px; }
+    .problem .section-sub { color: rgba(255,255,255,.55); max-width: 600px; }
+
+    .problem-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 2px; margin-top: 60px;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px; overflow: hidden;
+    }
+    .problem-card {
+      background: rgba(255,255,255,.03);
+      padding: 36px 32px;
+      border-right: 1px solid rgba(255,255,255,.06);
+      transition: background .3s;
+    }
+    .problem-card:hover { background: rgba(255,255,255,.06); }
+    .problem-card:last-child { border-right: none; }
+    .p-icon { font-size: 32px; margin-bottom: 20px; }
+    .p-title { font-size: 17px; font-weight: 600; color: var(--white); margin-bottom: 10px; }
+    .p-desc { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.65; }
+    .p-fine {
+      margin-top: 16px; display: inline-flex;
+      background: rgba(220,38,38,.15); border: 1px solid rgba(220,38,38,.3);
+      color: #fca5a5; font-size: 11px; font-weight: 700;
+      padding: 4px 10px; border-radius: 6px; letter-spacing: .3px;
+    }
+
+    /* ─── FEATURES ─── */
+    .features { background: var(--surface); }
+    .feat-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 24px; }
+
+    .feat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px; margin-top: 56px;
+    }
+    .feat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      transition: all .3s; cursor: default;
+    }
+    .feat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.08); border-color: #86efac; }
+    .feat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 42px; color: var(--border); line-height: 1;
+      margin-bottom: 20px;
+    }
+    .feat-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--accent-lt); display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 20px;
+    }
+    .feat-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+    .feat-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .feat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+    .tag {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 100px; background: var(--surface);
+      border: 1px solid var(--border); color: var(--muted);
+    }
+
+    /* ─── LAWS ─── */
+    .laws-section { background: var(--white); }
+    .laws-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .law-card {
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 24px; display: flex; gap: 16px;
+      transition: all .3s;
+    }
+    .law-card:hover { border-color: #86efac; background: var(--accent-lt); }
+    .law-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      background: var(--surface); display: flex; align-items: center;
+      justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .law-body { flex: 1; }
+    .law-name { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; letter-spacing: .3px; }
+    .law-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .law-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ─── TESTIMONIALS / USE CASES ─── */
+    .usecases { background: var(--surface); }
+    .uc-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px; margin-top: 48px;
+    }
+    .uc-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 24px; text-align: center;
+      transition: all .3s;
+    }
+    .uc-card:hover { border-color: #86efac; transform: translateY(-2px); }
+    .uc-emoji { font-size: 36px; margin-bottom: 14px; }
+    .uc-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .uc-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* ─── CTA BOTTOM ─── */
+    .cta-section {
+      background: linear-gradient(135deg, var(--ink) 0%, var(--ink-3) 100%);
+      text-align: center; padding: 96px 5vw;
+    }
+    .cta-section h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 4vw, 56px);
+      color: var(--white); letter-spacing: -.8px; margin-bottom: 20px;
+    }
+    .cta-section h2 em { color: #86efac; font-style: italic; }
+    .cta-section p { color: rgba(255,255,255,.55); font-size: 16px; margin-bottom: 40px; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-white {
+      background: var(--white); color: var(--ink);
+      box-shadow: 0 4px 20px rgba(255,255,255,.15);
+    }
+    .btn-white:hover { background: var(--surface); transform: translateY(-1px); }
+    .btn-outline-white {
+      background: transparent; color: rgba(255,255,255,.8);
+      border: 1.5px solid rgba(255,255,255,.2);
+    }
+    .btn-outline-white:hover { background: rgba(255,255,255,.08); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--ink-2); padding: 40px 5vw;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+    .footer-logo { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--white); }
+    .footer-logo em { color: #86efac; font-style: normal; }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 13px; color: rgba(255,255,255,.4); text-decoration: none; }
+    .footer-links a:hover { color: rgba(255,255,255,.7); }
+    .footer-copy { font-size: 12px; color: rgba(255,255,255,.3); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(32px); transition: all .7s cubic-bezier(.22,1,.36,1); }
+    .revealed { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hero-stats { gap: 20px; }
+      .cam-inner { grid-template-columns: 1fr; aspect-ratio: 4/3; }
+      .cam-cell:nth-child(2), .cam-cell:nth-child(3) { display: none; }
+    }
+  </style>
 </head>
-<body class="bg-white font-sans">
-    <nav class="flex items-center justify-between px-10 py-5 bg-white border-b sticky top-0 z-40">
-        <div class="flex items-center gap-2">
-            <div class="text-green-600 text-2xl">🛡️</div>
-            <span class="text-2xl font-bold text-gray-800">VietFood <span class="text-blue-400">Guard</span></span>
-        </div>
-        <div class="hidden md:flex gap-8 text-gray-600 font-medium">
-            <a href="#" class="hover:text-green-600">Vấn đề</a>
-            <a href="#" class="hover:text-green-600">Giải pháp</a>
-            <a href="#" class="hover:text-green-600">Đánh giá</a>
-            <a href="#" class="hover:text-green-600">Pháp lý</a>
-        </div>
-        
-        <div class="flex items-center gap-4">
-            <button onclick="toggleModal('loginModal')" class="text-gray-600 font-bold hover:text-blue-500 transition">Đăng nhập</button>
-            <button onclick="toggleModal('registerModal')" class="bg-green-500 text-white px-6 py-2 rounded-full font-semibold hover:bg-green-600 shadow-md transition">Đăng ký</button>
-        </div>
-    </nav>
+<body>
 
-    <section class="text-center py-20 px-5">
-        <span class="bg-green-50 text-green-600 px-4 py-1 rounded-full text-sm font-bold uppercase tracking-wider">Tối ưu hóa bằng công nghệ AI</span>
-        <h1 class="text-5xl font-extrabold text-gray-900 mt-6 mb-4">Tiêu chuẩn Vàng cho <br><span class="text-green-500">Bếp ăn Hiện đại</span></h1>
-        <p class="text-gray-500 text-lg max-w-2xl mx-auto mb-10">
-            Hệ thống giám sát vệ sinh an toàn thực phẩm 24/7 bằng Trí tuệ nhân tạo. Tự động hóa tuân thủ và bảo vệ uy tín thương hiệu của bạn.
-        </p>
-        <div class="flex justify-center gap-4">
-            <button onclick="toggleModal('registerModal')" class="bg-green-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-600 transition">Bắt đầu miễn phí</button>
-            <button class="border border-gray-300 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition">Tìm hiểu giải pháp</button>
-        </div>
-    </section>
+  <nav id="navbar">
+    <a href="/" class="nav-logo">
+      <div class="shield">🛡️</div>
+      <span>VietFood <em>Guard</em></span>
+    </a>
+    <div class="nav-links">
+      <a href="#problem">Vấn đề</a>
+      <a href="#features">Giải pháp</a>
+      <a href="#legal">Pháp lý</a>
+      <a href="#usecases">Đối tượng</a>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <button onclick="openRegister()" class="btn btn-ghost" style="padding: 10px 16px;">Đăng ký</button>
+      <a href="/login" class="btn btn-primary">Đăng nhập →</a>
+    </div>
+  </nav>
 
-    <div id="loginModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-[#1e293b] p-8 rounded-3xl w-full max-w-md relative shadow-2xl border border-slate-700">
-            <button onclick="toggleModal('loginModal')" class="absolute top-5 right-5 text-gray-400 hover:text-white text-xl">✕</button>
-            <div class="text-center mb-8">
-                <div class="text-3xl mb-2">🛡️</div>
-                <h2 class="text-2xl font-bold text-white">VietFood <span class="text-blue-500">Guard</span></h2>
-                <p class="text-gray-400 text-sm mt-2">Đăng nhập vào hệ thống quản lý</p>
-            </div>
-            <form action="/login" method="POST" class="space-y-5">
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Email hoặc Tên đăng nhập</label>
-                    <input type="text" name="username" placeholder="admin@vietfood.vn" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-white focus:border-blue-500 outline-none transition" required>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Mật khẩu</label>
-                    <input type="password" name="password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3.5 text-white focus:border-blue-500 outline-none transition" required>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-300">Đăng nhập ngay</button>
-                <p class="text-center text-sm text-gray-500 mt-4">Chưa có tài khoản? <a href="javascript:void(0)" onclick="toggleModal('loginModal'); toggleModal('registerModal')" class="text-blue-400 hover:underline">Đăng ký tại đây</a></p>
-            </form>
-        </div>
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-badge"><span class="dot"></span>Powered by YOLOv8 AI Real-time</div>
+    <h1>Bảo vệ bếp ăn của bạn<br>bằng <span class="highlight">Trí tuệ nhân tạo</span></h1>
+    <p class="hero-sub">
+      Hệ thống giám sát vệ sinh an toàn thực phẩm 24/7 — tự động phát hiện vi phạm, gửi cảnh báo tức thì, tuân thủ 100% Luật ATTP 2010.
+    </p>
+    <div class="hero-cta">
+      <a href="/login" class="btn btn-primary btn-lg">🚀 Đăng nhập hệ thống</a>
+      <button onclick="openRegister()" class="btn btn-ghost btn-lg">Tạo tài khoản</button>
     </div>
 
-    <div id="registerModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-md relative shadow-2xl">
-            <button onclick="toggleModal('registerModal')" class="absolute top-5 right-5 text-gray-400 hover:text-gray-800 text-xl">✕</button>
-            <div class="text-center mb-8">
-                <div class="text-3xl mb-2">✨</div>
-                <h2 class="text-2xl font-bold text-gray-800">Tạo tài khoản mới</h2>
-                <p class="text-gray-500 text-sm mt-1">Trải nghiệm miễn phí công nghệ giám sát AI</p>
-            </div>
-            <form action="/register" method="POST" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Tên chủ tài khoản</label>
-                    <input type="text" name="fullname" placeholder="Họ và tên của bạn" class="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none transition" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Email</label>
-                    <input type="email" name="username" placeholder="email@vi-du.com" class="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none transition" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Mật khẩu</label>
-                    <input type="password" name="password" placeholder="Tối thiểu 8 ký tự" class="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none transition" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Nhập lại mật khẩu</label>
-                    <input type="password" name="confirm_password" placeholder="Xác nhận mật khẩu" class="w-full border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none transition" required>
-                </div>
-                <button type="submit" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg transition duration-300 mt-2">Hoàn tất đăng ký</button>
-            </form>
-        </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">24/7</div>
+        <div class="stat-label">Giám sát liên tục</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">&lt;2s</div>
+        <div class="stat-label">Phát hiện vi phạm</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">10+</div>
+        <div class="stat-label">Loại vi phạm nhận diện</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Tuân thủ Luật ATTP</div>
+      </div>
     </div>
 
-    <script>
-        function toggleModal(id) {
-            const modal = document.getElementById(id);
-            modal.classList.toggle('hidden');
-        }
+    <div class="hero-visual">
+      <div class="cam-frame">
+        <div class="cam-bar">
+          <div class="cam-bar-left">
+            <span class="cam-bar-logo">🛡️ VIETFOOD GUARD</span>
+            <span class="live-badge">● LIVE</span>
+          </div>
+          <span class="cam-bar-right" id="clock">--:--:--</span>
+        </div>
+        <div class="cam-inner">
+          <div class="cam-cell">
+            <div class="cam-cell-header">
+              <span class="cam-dot alert"></span>CAM 01 · BẾP CHÍNH
+            </div>
+            <div class="cam-body">
+              <span class="icon">🧑‍🍳</span>
+              <div class="cam-alert-box">
+                ⚠️ PHÁT HIỆN VI PHẠM — KHÔNG ĐEO KHẨU TRANG
+              </div>
+            </div>
+          </div>
+          <div class="cam-cell">
+            <div class="cam-cell-header">
+              <span class="cam-dot ok"></span>CAM 02 · KHU SƠ CHẾ
+            </div>
+            <div class="cam-body">
+              <span class="icon">✅</span>
+            </div>
+          </div>
+          <div class="cam-cell">
+            <div class="cam-cell-header">
+              <span class="cam-dot warn"></span>CAM 03 · KHO LẠNH
+            </div>
+            <div class="cam-body">
+              <span class="icon">❄️</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // Đóng modal khi nhấn ra ngoài vùng form
-        window.onclick = function(event) {
-            if (event.target.classList.contains('bg-black/60')) {
-                event.target.classList.add('hidden');
-            }
-        }
-    </script>
+  <section class="problem" id="problem">
+    <div class="section-label">Vấn đề thực tế</div>
+    <h2 class="section-title">Vi phạm VSATTP không phải lúc nào cũng có người giám sát</h2>
+    <p class="section-sub">Một ca làm việc 8 tiếng — quản lý không thể có mặt 100%. Rủi ro xảy ra khi không ai để ý.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="p-icon">😷</div>
+        <div class="p-title">Không đeo khẩu trang</div>
+        <div class="p-desc">Vi phạm phổ biến nhất trong bếp ăn. Nguy cơ lây nhiễm vi khuẩn qua giọt bắn trực tiếp vào thực phẩm.</div>
+        <span class="p-fine">Phạt đến 3.000.000 VNĐ</span>
+      </div>
+      <div class="problem-card">
+        <div class="p-icon">💍</div>
+        <div class="p-title">Đeo trang sức khi chế biến</div>
+        <div class="p-desc">Nhẫn, vòng tay, đồng hồ là nguồn ô nhiễm vật lý hàng đầu theo QCVN 8-3:2012/BYT.</div>
+        <span class="p-fine">Phạt đến 20.000.000 VNĐ</span>
+      </div>
+      <div class="problem-card">
+        <div class="p-icon">🔪</div>
+        <div class="p-title">Dùng sai màu thớt</div>
+        <div class="p-desc">Dùng thớt thịt sống để cắt thực phẩm chín hoặc rau — nguyên nhân nhiễm chéo Salmonella, E.coli.</div>
+        <span class="p-fine">Ngộ độc tập thể: đến 150 triệu VNĐ</span>
+      </div>
+      <div class="problem-card">
+        <div class="p-icon">🧤</div>
+        <div class="p-title">Thiếu bảo hộ lao động</div>
+        <div class="p-desc">Không đội mũ, không găng tay khu sơ chế — vi phạm trực tiếp Điều 26 Luật ATTP 2010.</div>
+        <span class="p-fine">Phạt đến 20.000.000 VNĐ</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="feat-header">
+      <div>
+        <div class="section-label">Giải pháp AI</div>
+        <h2 class="section-title">Hệ thống giám sát toàn diện, tự động 24/7</h2>
+      </div>
+      <button onclick="openRegister()" class="btn btn-primary">Đăng ký trải nghiệm →</button>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">📷</div>
+        <div class="feat-title">Nhận diện vi phạm theo thời gian thực</div>
+        <div class="feat-desc">Camera + AI YOLOv8 tự động phát hiện: không khẩu trang, không mũ bảo hộ, đeo trang sức, dùng sai thớt — trong chưa đến 2 giây.</div>
+        <div class="feat-tags"><span class="tag">YOLOv8</span><span class="tag">Real-time</span><span class="tag">&lt;2s</span></div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📲</div>
+        <div class="feat-title">Cảnh báo Telegram tức thì</div>
+        <div class="feat-desc">Khi phát hiện vi phạm, hệ thống tự động chụp ảnh bằng chứng và gửi thông báo ngay tới Telegram của quản lý — dù đang ở đâu.</div>
+        <div class="feat-tags"><span class="tag">Telegram Bot</span><span class="tag">Ảnh bằng chứng</span></div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Dashboard quản lý trực quan</div>
+        <div class="feat-desc">Xem trực tiếp tất cả camera, thống kê vi phạm theo ngày, nhật ký chi tiết từng ca — tất cả trên một màn hình duy nhất.</div>
+        <div class="feat-tags"><span class="tag">Multi-camera</span><span class="tag">Live stats</span></div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📋</div>
+        <div class="feat-title">Nhật ký vi phạm tự động</div>
+        <div class="feat-desc">Lưu trữ toàn bộ lịch sử vi phạm với thời gian, loại vi phạm, tên nhân viên, khu vực — phục vụ kiểm tra nội bộ và đoàn thanh tra.</div>
+        <div class="feat-tags"><span class="tag">SQLite</span><span class="tag">Xuất báo cáo</span></div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">⚖️</div>
+        <div class="feat-title">Tuân thủ đầy đủ pháp lý VN</div>
+        <div class="feat-desc">Hệ thống được xây dựng theo đúng Luật ATTP 2010, QCVN 8-3:2012/BYT, Nghị định 115/2018 và WHO Hand Hygiene 2019.</div>
+        <div class="feat-tags"><span class="tag">Luật ATTP 2010</span><span class="tag">QCVN 8-3</span></div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🔧</div>
+        <div class="feat-title">Dễ triển khai, không cần IT</div>
+        <div class="feat-desc">Chạy trên máy tính Windows thông thường với webcam. Không cần server đắt tiền hay kỹ thuật viên chuyên biệt. Cài đặt trong 10 phút.</div>
+        <div class="feat-tags"><span class="tag">FastAPI</span><span class="tag">Plug & Play</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="laws-section" id="legal">
+    <div class="section-label">Nền tảng pháp lý</div>
+    <h2 class="section-title">Tuân thủ 100% văn bản pháp luật Việt Nam</h2>
+    <p class="section-sub">VietFood Guard được xây dựng dựa trên các quy định pháp lý hiện hành, đảm bảo doanh nghiệp luôn đúng luật.</p>
+
+    <div class="laws-grid">
+      <div class="law-card reveal">
+        <div class="law-icon">📜</div>
+        <div class="law-body">
+          <div class="law-name">Luật số 55/2010/QH12</div>
+          <div class="law-title">Luật An Toàn Thực Phẩm 2010</div>
+          <div class="law-desc">Điều 25–28 quy định điều kiện VSATTP nơi chế biến và cá nhân trực tiếp chế biến.</div>
+        </div>
+      </div>
+      <div class="law-card reveal">
+        <div class="law-icon">⚖️</div>
+        <div class="law-body">
+          <div class="law-name">Nghị định 115/2018/NĐ-CP</div>
+          <div class="law-title">Xử phạt vi phạm VSATTP</div>
+          <div class="law-desc">Mức phạt từ 500K đến 150 triệu đồng. Đình chỉ hoạt động 1–3 tháng.</div>
+        </div>
+      </div>
+      <div class="law-card reveal">
+        <div class="law-icon">🔬</div>
+        <div class="law-body">
+          <div class="law-name">QCVN 8-3:2012/BYT</div>
+          <div class="law-title">Giới hạn tác nhân vật lý</div>
+          <div class="law-desc">Quy định tóc, móng tay, trang sức — người chế biến là nguồn nguy hiểm số 1.</div>
+        </div>
+      </div>
+      <div class="law-card reveal">
+        <div class="law-icon">🏥</div>
+        <div class="law-body">
+          <div class="law-name">Thông tư 30/2012/TT-BYT</div>
+          <div class="law-title">Điều kiện ATTP bếp tập thể</div>
+          <div class="law-desc">Nguyên tắc bếp một chiều, lưu mẫu kiểm tra bắt buộc khi ngộ độc.</div>
+        </div>
+      </div>
+      <div class="law-card reveal">
+        <div class="law-icon">🤲</div>
+        <div class="law-body">
+          <div class="law-name">WHO Hand Hygiene 2019</div>
+          <div class="law-title">Kỹ thuật rửa tay 7 bước</div>
+          <div class="law-desc">AI đếm thời gian và nhận biết từng động tác rửa tay chuẩn WHO.</div>
+        </div>
+      </div>
+      <div class="law-card reveal">
+        <div class="law-icon">🦠</div>
+        <div class="law-body">
+          <div class="law-name">QCVN 8-1:2011/BYT</div>
+          <div class="law-title">Giới hạn vi sinh vật</div>
+          <div class="law-desc">Giới hạn Salmonella, E.coli, Staph aureus — cơ sở để xây dựng quy trình phát hiện.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="usecases" id="usecases">
+    <div class="section-label">Đối tượng sử dụng</div>
+    <h2 class="section-title">Phù hợp với mọi cơ sở chế biến thực phẩm</h2>
+
+    <div class="uc-grid">
+      <div class="uc-card reveal">
+        <div class="uc-emoji">🍽️</div>
+        <div class="uc-name">Nhà hàng & Khách sạn</div>
+        <div class="uc-desc">Giám sát khu bếp, khu sơ chế và phục vụ liên tục.</div>
+      </div>
+      <div class="uc-card reveal">
+        <div class="uc-emoji">🥘</div>
+        <div class="uc-name">Quán ăn & Bếp tập thể</div>
+        <div class="uc-desc">Đảm bảo tiêu chuẩn khi phục vụ số lượng lớn người ăn.</div>
+      </div>
+      <div class="uc-card reveal">
+        <div class="uc-emoji">🏭</div>
+        <div class="uc-name">Nhà máy thực phẩm</div>
+        <div class="uc-desc">Giám sát dây chuyền sản xuất, kho bảo quản theo ca.</div>
+      </div>
+      <div class="uc-card reveal">
+        <div class="uc-emoji">🏫</div>
+        <div class="uc-name">Trường học & Canteen</div>
+        <div class="uc-desc">Bảo vệ học sinh — đối tượng dễ bị ngộ độc nhất.</div>
+      </div>
+      <div class="uc-card reveal">
+        <div class="uc-emoji">🏪</div>
+        <div class="uc-name">Cơ sở sản xuất nhỏ</div>
+        <div class="uc-desc">Giải pháp chi phí thấp, không cần đội IT riêng.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>Bắt đầu bảo vệ bếp ăn<br>của bạn <em>ngay hôm nay</em></h2>
+    <p>Triển khai trong 10 phút. Không cần kỹ thuật viên. Chạy 24/7 hoàn toàn tự động.</p>
+    <div class="cta-buttons">
+      <a href="/login" class="btn btn-white btn-lg">🛡️ Đi đến Đăng nhập</a>
+      <button onclick="openRegister()" class="btn btn-outline-white btn-lg">Tạo tài khoản</button>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">VietFood <em>Guard</em> © 2026</div>
+    <div class="footer-links">
+      <a href="#">Luật ATTP</a>
+      <a href="#">Quy trình VSATTP</a>
+      <a href="#">Liên hệ</a>
+    </div>
+    <div class="footer-copy">Theo Luật ATTP 2010 | QCVN 8-3:2012/BYT | NĐ 115/2018</div>
+  </footer>
+
+  <div id="registerModal" class="modal-backdrop">
+    <div class="modal-box">
+      <button onclick="closeRegister()" class="modal-close">✕</button>
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div style="font-size: 32px; margin-bottom: 8px;">✨</div>
+        <div class="modal-title">Tạo tài khoản mới</div>
+        <div style="font-size: 14px; color: var(--muted);">Trải nghiệm miễn phí công nghệ giám sát AI</div>
+      </div>
+      <form action="/register" method="POST">
+        <div class="form-group">
+          <label class="form-label">Tên chủ tài khoản</label>
+          <input type="text" name="fullname" class="form-input" placeholder="Họ và tên của bạn" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" name="username" class="form-input" placeholder="email@vi-du.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mật khẩu</label>
+          <input type="password" name="password" class="form-input" placeholder="Tối thiểu 8 ký tự" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nhập lại mật khẩu</label>
+          <input type="password" name="confirm_password" class="form-input" placeholder="Xác nhận mật khẩu" required>
+        </div>
+        <button type="submit" class="btn-submit">Hoàn tất đăng ký</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Xử lý Modal Đăng ký
+    function openRegister() { document.getElementById('registerModal').classList.add('show'); }
+    function closeRegister() { document.getElementById('registerModal').classList.remove('show'); }
+    window.addEventListener('click', (e) => {
+      if (e.target.id === 'registerModal') closeRegister();
+    });
+
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('vi-VN', {hour12: false});
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // Navbar scroll
+    const nav = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('revealed'); }
+      });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  </script>
 </body>
 </html>
