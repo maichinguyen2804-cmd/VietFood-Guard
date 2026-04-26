@@ -23,16 +23,23 @@ app = FastAPI()
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 model = YOLO(MODEL_PATH)
 
-# 1. Khởi tạo Database với các cột chi tiết (Tên NV, Vị trí)
+# 1. Khởi tạo Database với 2 bảng: Vi phạm và Người dùng (MỚI)
 def setup_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    # Bảng lưu vi phạm
     cursor.execute('''CREATE TABLE IF NOT EXISTS violations 
                       (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                        time TEXT, 
                        type TEXT, 
                        staff_name TEXT, 
                        location TEXT)''')
+    # Bảng lưu tài khoản người dùng
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users 
+                      (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                       fullname TEXT, 
+                       username TEXT UNIQUE, 
+                       password TEXT)''')
     conn.commit()
     conn.close()
 
@@ -67,7 +74,6 @@ def generate_frames():
         if violation_detected:
             now = datetime.datetime.now()
             if (now - last_alert_time).seconds > 20:
-                # Lưu thông tin chi tiết vào DB
                 conn = sqlite3.connect(DB_PATH)
                 cursor = conn.cursor()
                 cursor.execute("""INSERT INTO violations (time, type, staff_name, location) 
@@ -88,41 +94,60 @@ def generate_frames():
 
 @app.get("/")
 async def home_page(request: Request):
-    # Trang giới thiệu (Cái vỏ)
     return templates.TemplateResponse(request=request, name="hom.html")
 
-# --- THÊM MỚI: Xử lý Form Đăng ký ---
+# --- NÂNG CẤP: Xử lý Form Đăng ký lưu vào Database ---
 @app.post("/register")
 async def register(fullname: str = Form(...), username: str = Form(...), password: str = Form(...), confirm_password: str = Form(...)):
-    # Khi nhấn "Hoàn tất đăng ký", hệ thống tự động trả về trang chủ để bạn thử Đăng nhập
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    try:
+        # Ghi thông tin vào sổ tay Database
+        cursor.execute("INSERT INTO users (fullname, username, password) VALUES (?, ?, ?)", 
+                       (fullname, username, password))
+        conn.commit()
+        print(f"Đã tạo tài khoản thành công cho: {username}")
+    except sqlite3.IntegrityError:
+        # Lỗi này xảy ra khi email đã được đăng ký rồi
+        print("Tài khoản đã tồn tại!")
+    finally:
+        conn.close()
+        
     return RedirectResponse(url="/", status_code=303)
 
-# --- THÊM MỚI: Xử lý Form Đăng nhập ---
+# --- NÂNG CẤP: Xử lý Form Đăng nhập kiểm tra Database ---
 @app.post("/login")
 async def login_post(username: str = Form(...), password: str = Form(...)):
-    # ĐÂY LÀ CHÌA KHÓA: Tài khoản đặc quyền của Chí Nguyên
+    # 1. Giữ lại tài khoản Admin đặc quyền không bao giờ bị xóa
     if username == "maichinguyen2804@gmail.com" and password == "12345678":
-        # Chuyển hướng thẳng vào Dashboard Camera AI
         return RedirectResponse(url="/dashboard", status_code=303)
     
-    # Nếu nhập sai, đẩy về lại trang Landing Page
+    # 2. Dò tìm trong Database xem có khách nào đăng ký chưa
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE username = ? AND password = ?", (username, password))
+    user = cursor.fetchone()
+    conn.close()
+
+    # 3. Nếu tìm thấy khách hợp lệ
+    if user:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    # Nếu sai email hoặc mật khẩu thì trả về trang chủ
     return RedirectResponse(url="/", status_code=303)
 
 @app.get("/login")
 async def login_page(request: Request):
-    # Giữ lại trang login cũ dự phòng
     return templates.TemplateResponse(request=request, name="login.html")
 
 @app.get("/dashboard")
 async def dashboard_page(request: Request):
-    # Trang Dashboard quản lý camera (Cái lõi)
     return templates.TemplateResponse(request=request, name="index.html")
 
 @app.get("/video_feed")
 def video_feed():
     return StreamingResponse(generate_frames(), media_type="multipart/x-mixed-replace; boundary=frame")
 
-# API lấy dữ liệu thống kê để hiển thị lên Dashboard
 @app.get("/stats")
 def get_stats():
     conn = sqlite3.connect(DB_PATH)
@@ -130,11 +155,9 @@ def get_stats():
     cursor = conn.cursor()
     today = datetime.datetime.now().strftime('%Y-%m-%d')
     
-    # Đếm số ca vi phạm hôm nay
     cursor.execute("SELECT COUNT(*) FROM violations WHERE time LIKE ?", (f'{today}%',))
     total_today = cursor.fetchone()[0]
     
-    # Lấy 5 ca vi phạm mới nhất
     cursor.execute("SELECT * FROM violations ORDER BY id DESC LIMIT 5")
     history = [dict(row) for row in cursor.fetchall()]
     
@@ -142,6 +165,5 @@ def get_stats():
     return {"total_today": total_today, "history": history}
 
 if __name__ == "__main__":
-    # Đã tinh chỉnh lại đoạn này để tương thích 100% với môi trường Cloud của Render
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
