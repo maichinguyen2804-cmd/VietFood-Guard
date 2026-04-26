@@ -52,7 +52,6 @@
         radial-gradient(ellipse 40% 40% at 70% 70%, rgba(34,197,94,.06) 0%, transparent 50%);
     }
 
-    /* Grid */
     .lp-grid {
       position: absolute; inset: 0; pointer-events: none;
       background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
@@ -100,7 +99,6 @@
       color: white; margin-bottom: 20px;
     }
     .lp-headline em { color: var(--accent); font-style: italic; }
-
     .lp-sub { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 420px; }
 
     .lp-stats {
@@ -112,36 +110,44 @@
     }
     .lp-stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-    /* Mini camera feed mockup */
-    .mini-cams {
+    /* ─── MODULES TRẠNG THÁI HỆ THỐNG ─── */
+    .tech-modules {
       position: relative; z-index: 1;
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 10px; margin-top: 40px;
-      max-width: 360px;
+      gap: 12px; margin-top: 40px;
+      max-width: 420px;
     }
-    .mini-cam {
-      background: rgba(0,0,0,.5);
+    .tech-mod {
+      background: rgba(255,255,255,.03);
       border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px;
-      aspect-ratio: 16/9;
-      display: flex; flex-direction: column; justify-content: space-between;
+      border-radius: 12px; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative; overflow: hidden;
+      transition: all 0.3s ease;
     }
-    .mini-cam-top {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 9px; font-weight: 700; color: var(--muted);
-      letter-spacing: .5px;
+    .tech-mod:hover {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(34,197,94,.3);
     }
-    .mc-dot { width: 4px; height: 4px; border-radius: 50%; }
-    .mc-dot.red { background: #ef4444; animation: blink 1s infinite; }
-    .mc-dot.green { background: #22c55e; }
+    .tm-header {
+      display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px dashed rgba(255,255,255,.1);
+      padding-bottom: 8px;
+    }
+    .tm-icon { font-size: 14px; }
+    .tm-title { font-size: 10px; font-weight: 700; color: white; letter-spacing: .5px;}
+    
+    .tm-body { display: flex; flex-direction: column; gap: 6px; flex: 1;}
+    .tm-row { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-family: monospace;}
+    .tm-row .hl { color: #86efac; font-weight: 600;}
 
-    .mini-cam-alert {
-      background: rgba(239,68,68,.85);
-      border-radius: 4px; padding: 3px 6px;
-      font-size: 8px; font-weight: 700; color: white;
+    .tm-status { 
+      font-size: 9px; font-weight: 700; color: #22c55e; 
+      margin-top: auto; background: rgba(34,197,94,.1);
+      padding: 4px 8px; border-radius: 4px; display: inline-block; width: fit-content;
     }
 
-    .lp-footer { position: relative; z-index: 1; }
+    .lp-footer { position: relative; z-index: 1; margin-top: 40px;}
     .lp-footer-text { font-size: 11px; color: rgba(255,255,255,.2); line-height: 1.7; }
 
     /* ── RIGHT PANEL (LOGIN FORM) ── */
@@ -193,7 +199,6 @@
     .login-title em { color: var(--accent); font-style: normal; }
     .login-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
-    /* System status bar */
     .sys-status {
       background: rgba(34,197,94,.08);
       border: 1px solid rgba(34,197,94,.2);
@@ -211,7 +216,6 @@
     .sys-text strong { color: var(--accent); }
     .sys-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-    /* Form */
     .form-group { margin-bottom: 20px; }
     .form-label {
       display: block; font-size: 12px; font-weight: 600;
@@ -269,16 +273,6 @@
       box-shadow: 0 10px 32px rgba(34,197,94,.4);
     }
     .btn-login:active { transform: translateY(0); }
-
-    .divider {
-      text-align: center; font-size: 11px; color: var(--muted);
-      margin: 20px 0; position: relative;
-    }
-    .divider::before, .divider::after {
-      content: ''; position: absolute; top: 50%;
-      width: 40%; height: 1px; background: var(--border);
-    }
-    .divider::before { left: 0; } .divider::after { right: 0; }
 
     .role-select {
       display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
@@ -346,23 +340,56 @@
         </div>
       </div>
 
-      <div class="mini-cams">
-        <div class="mini-cam">
-          <div class="mini-cam-top"><span class="mc-dot red"></span>CAM 01 · BẾP CHÍNH</div>
-          <div class="mini-cam-alert">⚠️ VI PHẠM PHÁT HIỆN</div>
+      <div class="tech-modules">
+        
+        <div class="tech-mod">
+          <div class="tm-header">
+            <span class="tm-icon">🧠</span>
+            <span class="tm-title">LÕI TRÍ TUỆ NHÂN TẠO</span>
+          </div>
+          <div class="tm-body">
+            <div class="tm-row"><span>Mô hình:</span><span class="hl">YOLOv8 Vision</span></div>
+            <div class="tm-row"><span>Tốc độ:</span><span>&lt; 15ms/frame</span></div>
+          </div>
+          <div class="tm-status">✓ ĐANG HOẠT ĐỘNG</div>
         </div>
-        <div class="mini-cam">
-          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 02 · SƠ CHẾ</div>
-          <div style="font-size:9px;color:#22c55e;font-weight:700;">✓ BÌNH THƯỜNG</div>
+
+        <div class="tech-mod">
+          <div class="tm-header">
+            <span class="tm-icon">📲</span>
+            <span class="tm-title">HỆ THỐNG CẢNH BÁO</span>
+          </div>
+          <div class="tm-body">
+            <div class="tm-row"><span>Kênh:</span><span class="hl">Telegram API</span></div>
+            <div class="tm-row"><span>Độ trễ:</span><span>&lt; 2 giây</span></div>
+          </div>
+          <div class="tm-status">✓ ĐÃ KẾT NỐI</div>
         </div>
-        <div class="mini-cam">
-          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 03 · KHO LẠNH</div>
-          <div style="font-size:9px;color:rgba(255,255,255,.3);">Không chuyển động</div>
+
+        <div class="tech-mod">
+          <div class="tm-header">
+            <span class="tm-icon">🗄️</span>
+            <span class="tm-title">CƠ SỞ DỮ LIỆU</span>
+          </div>
+          <div class="tm-body">
+            <div class="tm-row"><span>Engine:</span><span class="hl">SQLite Secure</span></div>
+            <div class="tm-row"><span>Auto-sync:</span><span>Enabled (2s)</span></div>
+          </div>
+          <div class="tm-status">✓ ĐÃ ĐỒNG BỘ</div>
         </div>
-        <div class="mini-cam">
-          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 04 · PHỤC VỤ</div>
-          <div style="font-size:9px;color:#22c55e;font-weight:700;">✓ BÌNH THƯỜNG</div>
+
+        <div class="tech-mod">
+          <div class="tm-header">
+            <span class="tm-icon">⚖️</span>
+            <span class="tm-title">TIÊU CHUẨN PHÁP LÝ</span>
+          </div>
+          <div class="tm-body">
+            <div class="tm-row"><span>Đạo luật:</span><span class="hl">ATTP 2010</span></div>
+            <div class="tm-row"><span>Tiêu chuẩn:</span><span>QCVN 8-3:2012</span></div>
+          </div>
+          <div class="tm-status">✓ TUÂN THỦ 100%</div>
         </div>
+
       </div>
     </div>
 
@@ -460,7 +487,6 @@
       else { inp.type = 'password'; btn.textContent = '👁️'; }
     }
 
-    // Tự động kiểm tra URL xem có chữ "error=1" (do sai mk) hay không để bật cảnh báo
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       if(urlParams.get('error') === '1') {
