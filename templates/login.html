@@ -1,31 +1,472 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <title>Đăng nhập - VietFood Guard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đăng nhập — VietFood Guard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #070d14;
+      --surface: #0d1520;
+      --card:    #111e2d;
+      --border:  rgba(255,255,255,.08);
+      --border2: rgba(255,255,255,.14);
+      --muted:   rgba(255,255,255,.45);
+      --text:    rgba(255,255,255,.9);
+      --accent:  #22c55e;
+      --accent2: #16a34a;
+      --glow:    rgba(34,197,94,.18);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      display: none;
+      flex: 1; position: relative;
+      background: linear-gradient(150deg, #0a1a0e 0%, #050d07 100%);
+      padding: 48px;
+      flex-direction: column; justify-content: space-between;
+      overflow: hidden;
+    }
+    @media (min-width: 900px) { .left-panel { display: flex; } }
+
+    .lp-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 60% at 30% 40%, rgba(34,197,94,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 70% 70%, rgba(34,197,94,.06) 0%, transparent 50%);
+    }
+
+    /* Grid */
+    .lp-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .lp-logo {
+      display: flex; align-items: center; gap: 12px;
+      position: relative; z-index: 1;
+    }
+    .shield-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: 0 4px 20px var(--glow);
+    }
+    .lp-logo-text {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px; color: white;
+    }
+    .lp-logo-text em { color: var(--accent); font-style: normal; }
+
+    .lp-content {
+      position: relative; z-index: 1;
+    }
+    .lp-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 100px;
+      background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25);
+      font-size: 11px; font-weight: 600; color: var(--accent);
+      letter-spacing: .5px; text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .live-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent); animation: blink 1.5s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+
+    .lp-headline {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 3vw, 44px);
+      line-height: 1.15; letter-spacing: -.5px;
+      color: white; margin-bottom: 20px;
+    }
+    .lp-headline em { color: var(--accent); font-style: italic; }
+
+    .lp-sub { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 420px; }
+
+    .lp-stats {
+      display: flex; gap: 32px; margin-top: 48px;
+    }
+    .lp-stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px; color: white; display: block;
+    }
+    .lp-stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* Mini camera feed mockup */
+    .mini-cams {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-top: 40px;
+      max-width: 360px;
+    }
+    .mini-cam {
+      background: rgba(0,0,0,.5);
+      border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px;
+      aspect-ratio: 16/9;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .mini-cam-top {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 9px; font-weight: 700; color: var(--muted);
+      letter-spacing: .5px;
+    }
+    .mc-dot { width: 4px; height: 4px; border-radius: 50%; }
+    .mc-dot.red { background: #ef4444; animation: blink 1s infinite; }
+    .mc-dot.green { background: #22c55e; }
+
+    .mini-cam-alert {
+      background: rgba(239,68,68,.85);
+      border-radius: 4px; padding: 3px 6px;
+      font-size: 8px; font-weight: 700; color: white;
+    }
+
+    .lp-footer { position: relative; z-index: 1; }
+    .lp-footer-text { font-size: 11px; color: rgba(255,255,255,.2); line-height: 1.7; }
+
+    /* ── RIGHT PANEL (LOGIN FORM) ── */
+    .right-panel {
+      width: 100%;
+      max-width: 100%;
+      background: var(--surface);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 32px;
+      position: relative;
+      overflow-y: auto;
+    }
+    @media (min-width: 900px) {
+      .right-panel { width: 460px; flex-shrink: 0; max-width: 460px; }
+    }
+
+    .rp-bg {
+      position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 60% 80% at 100% 100%, rgba(34,197,94,.05) 0%, transparent 60%);
+    }
+
+    .login-box {
+      width: 100%; max-width: 380px;
+      position: relative; z-index: 1;
+    }
+
+    .login-logo {
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: 40px; text-align: center;
+    }
+    .login-shield {
+      width: 60px; height: 60px; border-radius: 18px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; margin-bottom: 16px;
+      box-shadow: 0 8px 32px var(--glow);
+      animation: floatShield 4s ease-in-out infinite;
+    }
+    @keyframes floatShield {
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-6px)}
+    }
+
+    .login-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px; color: white; letter-spacing: -.3px;
+    }
+    .login-title em { color: var(--accent); font-style: normal; }
+    .login-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+    /* System status bar */
+    .sys-status {
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 10px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 28px;
+    }
+    .sys-dot-wrap {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+      box-shadow: 0 0 8px var(--accent);
+      animation: blink 2s infinite;
+    }
+    .sys-text { font-size: 12px; color: rgba(255,255,255,.6); flex: 1; }
+    .sys-text strong { color: var(--accent); }
+    .sys-time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Form */
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: rgba(255,255,255,.55); letter-spacing: .5px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .form-input {
+      width: 100%; padding: 13px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: white; font-size: 14px; font-family: inherit;
+      transition: all .25s; outline: none;
+    }
+    .form-input::placeholder { color: rgba(255,255,255,.25); }
+    .form-input:focus {
+      border-color: var(--accent);
+      background: rgba(34,197,94,.05);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+    }
+
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 15px; pointer-events: none;
+    }
+    .has-icon .form-input { padding-left: 42px; }
+
+    .toggle-pw {
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 14px; padding: 4px;
+      transition: color .2s;
+    }
+    .toggle-pw:hover { color: white; }
+
+    .form-hint {
+      font-size: 11px; color: var(--muted); margin-top: 6px;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    .btn-login {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 12px;
+      color: white; font-size: 15px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      transition: all .25s;
+      box-shadow: 0 6px 24px rgba(34,197,94,.3);
+      margin-top: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 32px rgba(34,197,94,.4);
+    }
+    .btn-login:active { transform: translateY(0); }
+
+    .divider {
+      text-align: center; font-size: 11px; color: var(--muted);
+      margin: 20px 0; position: relative;
+    }
+    .divider::before, .divider::after {
+      content: ''; position: absolute; top: 50%;
+      width: 40%; height: 1px; background: var(--border);
+    }
+    .divider::before { left: 0; } .divider::after { right: 0; }
+
+    .role-select {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-bottom: 24px;
+    }
+    .role-btn {
+      padding: 10px 12px; border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      font-family: inherit; cursor: pointer; text-align: center;
+      transition: all .2s;
+    }
+    .role-btn:hover { border-color: var(--border2); color: white; }
+    .role-btn.active {
+      border-color: var(--accent);
+      background: rgba(34,197,94,.08);
+      color: var(--accent);
+    }
+    .role-icon { font-size: 18px; display: block; margin-bottom: 4px; }
+
+    .back-link {
+      text-align: center; margin-top: 28px;
+      font-size: 13px; color: var(--muted);
+    }
+    .back-link a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .back-link a:hover { text-decoration: underline; }
+
+    .rp-legal {
+      position: absolute; bottom: 20px;
+      font-size: 11px; color: rgba(255,255,255,.2);
+      text-align: center; width: 100%;
+      padding: 0 32px;
+    }
+  </style>
 </head>
-<body class="bg-slate-900 flex items-center justify-center h-screen">
-    <div class="bg-slate-800 p-10 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700">
-        <div class="text-center mb-8">
-            <div class="text-4xl mb-4">🛡️</div>
-            <h2 class="text-3xl font-black text-white">VietFood <span class="text-blue-500">Guard</span></h2>
-            <p class="text-slate-400 mt-2">Hệ thống quản lý an toàn thực phẩm AI</p>
-        </div>
-        
-        <form action="/dashboard" method="get" class="space-y-6">
-            <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2">Tài khoản quản lý</label>
-                <input type="text" value="admin@vietfood.vn" class="w-full px-4 py-3 bg-slate-900 text-white rounded-xl border border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition">
-            </div>
-            <div>
-                <label class="block text-sm font-bold text-slate-300 mb-2">Mật khẩu</label>
-                <input type="password" value="12345678" class="w-full px-4 py-3 bg-slate-900 text-white rounded-xl border border-slate-600 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none transition">
-            </div>
-            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-900 transition">
-                Đăng nhập vào hệ thống
-            </button>
-        </form>
+<body>
+
+  <div class="left-panel">
+    <div class="lp-bg"></div>
+    <div class="lp-grid"></div>
+
+    <div class="lp-logo">
+      <div class="shield-icon">🛡️</div>
+      <span class="lp-logo-text">VietFood <em>Guard</em></span>
     </div>
+
+    <div class="lp-content">
+      <div class="lp-badge"><span class="live-dot"></span>Hệ thống đang hoạt động</div>
+      <h2 class="lp-headline">Bảo vệ bếp ăn của bạn<br>bằng <em>trí tuệ nhân tạo</em></h2>
+      <p class="lp-sub">Giám sát vệ sinh an toàn thực phẩm 24/7 — phát hiện vi phạm trong chưa đến 2 giây, cảnh báo tức thì qua Telegram.</p>
+
+      <div class="lp-stats">
+        <div>
+          <span class="lp-stat-num">24/7</span>
+          <div class="lp-stat-label">Giám sát liên tục</div>
+        </div>
+        <div>
+          <span class="lp-stat-num">10+</span>
+          <div class="lp-stat-label">Loại vi phạm</div>
+        </div>
+        <div>
+          <span class="lp-stat-num">100%</span>
+          <div class="lp-stat-label">Tuân thủ ATTP</div>
+        </div>
+      </div>
+
+      <div class="mini-cams">
+        <div class="mini-cam">
+          <div class="mini-cam-top"><span class="mc-dot red"></span>CAM 01 · BẾP CHÍNH</div>
+          <div class="mini-cam-alert">⚠️ VI PHẠM PHÁT HIỆN</div>
+        </div>
+        <div class="mini-cam">
+          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 02 · SƠ CHẾ</div>
+          <div style="font-size:9px;color:#22c55e;font-weight:700;">✓ BÌNH THƯỜNG</div>
+        </div>
+        <div class="mini-cam">
+          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 03 · KHO LẠNH</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.3);">Không chuyển động</div>
+        </div>
+        <div class="mini-cam">
+          <div class="mini-cam-top"><span class="mc-dot green"></span>CAM 04 · PHỤC VỤ</div>
+          <div style="font-size:9px;color:#22c55e;font-weight:700;">✓ BÌNH THƯỜNG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lp-footer">
+      <div class="lp-footer-text">
+        Luật ATTP 2010 (55/2010/QH12) · QCVN 8-3:2012/BYT<br>
+        Nghị định 115/2018/NĐ-CP · WHO Hand Hygiene 2019<br>
+        VietFood Guard © 2026
+      </div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="rp-bg"></div>
+    <div class="login-box">
+
+      <div class="login-logo">
+        <div class="login-shield">🛡️</div>
+        <div class="login-title">VietFood <em>Guard</em></div>
+        <div class="login-sub">Hệ thống quản lý vệ sinh an toàn thực phẩm AI</div>
+      </div>
+
+      <div class="sys-status">
+        <div class="sys-dot-wrap"></div>
+        <div class="sys-text">Máy chủ <strong>ổn định</strong> · Camera AI sẵn sàng</div>
+        <div class="sys-time" id="loginClock">--:--:--</div>
+      </div>
+
+      <div class="form-group">
+        <div class="form-label">Vai trò</div>
+        <div class="role-select">
+          <button class="role-btn active" onclick="selectRole(this)">
+            <span class="role-icon">👔</span>Quản lý
+          </button>
+          <button class="role-btn" onclick="selectRole(this)">
+            <span class="role-icon">🔑</span>Admin hệ thống
+          </button>
+        </div>
+      </div>
+
+      <form action="/login" method="POST" id="loginForm">
+        <div class="form-group">
+          <label class="form-label">Tài khoản</label>
+          <div class="input-wrap has-icon">
+            <span class="input-icon">✉️</span>
+            <input type="text" name="username" class="form-input" id="emailInput" placeholder="Email hoặc tên đăng nhập" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Mật khẩu</label>
+          <div class="input-wrap has-icon">
+            <span class="input-icon">🔒</span>
+            <input type="password" name="password" class="form-input" id="pwInput" placeholder="Nhập mật khẩu" required>
+            <button type="button" class="toggle-pw" onclick="togglePw()" id="toggleBtn">👁️</button>
+          </div>
+          <div class="form-hint">🔐 Mã hóa SSL — dữ liệu được bảo mật</div>
+        </div>
+
+        <div id="errMsg" style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;font-size:12px;font-weight:600;padding:10px 14px;border-radius:10px;margin-bottom:10px;">
+          ❌ Tài khoản hoặc mật khẩu không đúng. Vui lòng thử lại.
+        </div>
+
+        <button type="submit" class="btn-login" onclick="this.innerHTML='Đang xác thực...'">
+          <span>🛡️</span> <span id="loginBtnText">Đăng nhập vào hệ thống</span>
+        </button>
+      </form>
+
+      <div class="back-link">
+        <a href="/">← Quay về trang giới thiệu</a>
+      </div>
+    </div>
+
+    <div class="rp-legal">
+      Theo Luật ATTP 2010 | QCVN 8-3:2012/BYT | Nghị định 115/2018/NĐ-CP
+    </div>
+  </div>
+
+  <script>
+    function updateClock() {
+      document.getElementById('loginClock').textContent =
+        new Date().toLocaleTimeString('vi-VN', {hour12: false});
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    function selectRole(btn) {
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function togglePw() {
+      const inp = document.getElementById('pwInput');
+      const btn = document.getElementById('toggleBtn');
+      if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+      else { inp.type = 'password'; btn.textContent = '👁️'; }
+    }
+
+    // Tự động kiểm tra URL xem có chữ "error=1" (do sai mk) hay không để bật cảnh báo
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if(urlParams.get('error') === '1') {
+        document.getElementById('errMsg').style.display = 'block';
+      }
+    };
+  </script>
 </body>
 </html>
