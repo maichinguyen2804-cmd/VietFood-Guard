@@ -4,3 +4,4 @@ ultralytics
 opencv-python-headless
 jinja2
 requests
+python-multipart
