@@ -1,8 +1,8 @@
 import os
 import cv2
 from ultralytics import YOLO
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 import requests
@@ -74,7 +74,7 @@ def generate_frames():
                                   VALUES (?, ?, ?, ?)""", 
                                (now.strftime('%Y-%m-%d %H:%M:%S'), 
                                 "Không đeo khẩu trang", 
-                                "NV. Nguyễn Văn A", # Sau này bạn có thể thay bằng nhận diện khuôn mặt
+                                "NV. Nguyễn Văn A", 
                                 "Khu sơ chế"))
                 conn.commit()
                 conn.close()
@@ -91,9 +91,26 @@ async def home_page(request: Request):
     # Trang giới thiệu (Cái vỏ)
     return templates.TemplateResponse(request=request, name="hom.html")
 
+# --- THÊM MỚI: Xử lý Form Đăng ký ---
+@app.post("/register")
+async def register(fullname: str = Form(...), username: str = Form(...), password: str = Form(...), confirm_password: str = Form(...)):
+    # Khi nhấn "Hoàn tất đăng ký", hệ thống tự động trả về trang chủ để bạn thử Đăng nhập
+    return RedirectResponse(url="/", status_code=303)
+
+# --- THÊM MỚI: Xử lý Form Đăng nhập ---
+@app.post("/login")
+async def login_post(username: str = Form(...), password: str = Form(...)):
+    # ĐÂY LÀ CHÌA KHÓA: Tài khoản đặc quyền của Chí Nguyên
+    if username == "maichinguyen2804@gmail.com" and password == "12345678":
+        # Chuyển hướng thẳng vào Dashboard Camera AI
+        return RedirectResponse(url="/dashboard", status_code=303)
+    
+    # Nếu nhập sai, đẩy về lại trang Landing Page
+    return RedirectResponse(url="/", status_code=303)
+
 @app.get("/login")
 async def login_page(request: Request):
-    # Trang đăng nhập mới thêm
+    # Giữ lại trang login cũ dự phòng
     return templates.TemplateResponse(request=request, name="login.html")
 
 @app.get("/dashboard")
@@ -125,4 +142,6 @@ def get_stats():
     return {"total_today": total_today, "history": history}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Đã tinh chỉnh lại đoạn này để tương thích 100% với môi trường Cloud của Render
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
