@@ -1,0 +1,2706 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VietFood Guard — Hệ Thống Giám Sát VSATTP bằng AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.12.0/tsparticles.bundle.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    #tsparticles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      z-index: 0; 
+    }
+
+    :root {
+      --ink:       #0d1117;
+      --ink-2:     #1e2530;
+      --ink-3:     #2e3a4a;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --surface:   #f8fafc;
+      --white:     #ffffff;
+      --accent:    #3ea02d; /* Xanh lá cây từ logo */
+      --accent-2:  #29701d;
+      --accent-lt: #e3f7df;
+      --red:       #dc2626;
+      --red-lt:    #fee2e2;
+      --amber:     #d97706;
+      --amber-lt:  #fef3c7;
+      --topbar-bg: #0b2e35; /* Xanh ngọc đậm từ viền logo */
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: var(--white);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ─── HEADER & TOP BAR ─── */
+    .site-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow .3s;
+    }
+    .site-header.scrolled { box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+
+    .top-bar {
+      background: var(--topbar-bg); color: white; padding: 12px 5vw;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; font-weight: 500;
+    }
+    .top-bar-left, .top-bar-right { display: flex; gap: 24px; align-items: center; }
+    .top-bar-item { display: flex; align-items: center; gap: 8px; }
+    .top-bar-item a { color: white; text-decoration: none; transition: 0.3s; }
+    .top-bar-item a:hover { color: #86efac; }
+    .lang-select { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; padding: 3px 6px; font-size: 12px; cursor: pointer; outline: none; transition: 0.3s; }
+    .lang-select:hover { border-color: white; }
+    .lang-select option { color: var(--ink); background: white; font-size: 13px; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 5vw; height: 84px; }
+    .nav-logo { display: flex; align-items: center; text-decoration: none; cursor: pointer; }
+    .nav-logo img { height: 76px; width: auto; object-fit: contain; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none; transition: color .2s; cursor: pointer; padding: 5px 0; position: relative; }
+    .nav-links a::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px; background: var(--accent); transition: 0.3s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+    .nav-links a.active { color: var(--accent); }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; border: none; transition: all .2s; }
+    .btn-primary { background: var(--accent); color: var(--white); box-shadow: 0 4px 14px rgba(62,160,45,.35); }
+    .btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(62,160,45,.4); }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface); }
+    .btn-lg { padding: 14px 30px; font-size: 15px; border-radius: 12px; }
+
+    /* ─── LÕI CHUYỂN TRANG (SPA) ─── */
+    .page-section { display: none !important; animation: fadeIn 0.4s ease forwards; }
+    .page-section.active-page { display: block !important; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── TRANG CHỦ ─── */
+    .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 160px 5vw 80px; background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--accent-lt) 0%, transparent 60%), linear-gradient(180deg, var(--white) 0%, var(--surface) 100%); position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(circle at 20% 80%, rgba(62,160,45,.06) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(62,160,45,.04) 0%, transparent 50%); pointer-events: none; }
+    .hero-grid { position: absolute; inset: 0; pointer-events: none; opacity: .4; background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 80% at center, black 0%, transparent 70%); }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 100px; background: var(--accent-lt); border: 1px solid #86efac; font-size: 12px; font-weight: 600; color: var(--accent-2); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 28px; animation: fadeUp .6s ease both; }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .5; transform: scale(1.5); } }
+    .hero h1 { font-family: 'Montserrat', sans-serif; font-size: clamp(40px, 6vw, 76px); line-height: 1.1; letter-spacing: -1.5px; color: var(--ink); max-width: 900px; animation: fadeUp .7s .1s ease both; }
+    .hero h1 .highlight { color: var(--accent); font-style: italic; }
+    .hero-sub { font-size: clamp(15px, 1.5vw, 18px); color: var(--muted); font-weight: 400; max-width: 580px; line-height: 1.7; margin: 24px auto 40px; animation: fadeUp .7s .2s ease both; }
+    .hero-cta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; animation: fadeUp .7s .3s ease both; }
+    .hero-stats { 
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+      gap: 20px; margin-top: 72px; padding: 40px; 
+      background: linear-gradient(135deg, #1f4a25 0%, #0b2e35 100%); 
+      border-radius: 24px; width: 100%; max-width: 1000px; 
+      color: white; animation: fadeUp .7s .4s ease both;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1), inset 0 0 0 1px rgba(255,255,255,0.1);
+      position: relative; overflow: hidden;
+    }
+    .hero-stats::after {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+      pointer-events: none; animation: rotate-glow 10s linear infinite;
+    }
+    @keyframes rotate-glow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .stat-item { text-align: left; padding: 0 20px; border-left: 1px solid rgba(255,255,255,0.15); }
+    .stat-item:first-child { border-left: none; }
+    .stat-num { font-family: 'DM Serif Display', serif; font-size: 48px; color: white; line-height: 1; }
+    .stat-num span { font-size: 20px; opacity: 0.6; margin-left: 4px; font-family: 'Montserrat', sans-serif; }
+    .stat-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 10px; opacity: 0.9; }
+    .stat-sub { font-size: 10px; opacity: 0.5; margin-top: 4px; font-style: italic; }
+    .hero-visual { position: relative; margin-top: 80px; width: 100%; max-width: 860px; animation: fadeUp .8s .5s ease both; }
+    .cam-frame { background: var(--ink-2); border-radius: 20px; padding: 4px; box-shadow: 0 40px 80px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.1); overflow: hidden; }
+    .cam-inner { background: #111827; border-radius: 16px; aspect-ratio: 16/6; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2px; overflow: hidden; position: relative; }
+    .cam-cell { background: #0f172a; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    .cam-cell-header { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.06); font-size: 10px; font-weight: 600; color: rgba(255,255,255,.5); letter-spacing: .5px; }
+    .cam-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .cam-dot.ok { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .cam-dot.warn { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .cam-dot.alert { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: pulse 1.5s infinite; }
+    .cam-body { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+    .cam-body .icon { font-size: 28px; opacity: .2; }
+    .cam-alert-box { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(220,38,38,.9); border-radius: 6px; padding: 6px 10px; font-size: 9px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; gap: 6px; border: 1px solid rgba(255,100,100,.4); }
+    .cam-bar { background: var(--ink); padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .cam-bar-left { display: flex; align-items: center; gap: 8px; }
+    .cam-bar-logo { font-size: 11px; font-weight: 700; color: rgba(255,255,255,.7); letter-spacing: .5px; }
+    .live-badge { background: #ef4444; color: white; font-size: 9px; font-weight: 700; letter-spacing: .5px; padding: 2px 8px; border-radius: 4px; }
+    .cam-bar-right { font-size: 10px; color: rgba(255,255,255,.3); }
+
+    .home-section { padding: 96px 5vw; }
+    .section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+    .section-title { font-family: 'Montserrat', sans-serif; font-size: clamp(30px, 3.5vw, 48px); line-height: 1.15; letter-spacing: -.8px; max-width: 640px; }
+    .section-sub { font-size: 16px; color: var(--muted); line-height: 1.7; max-width: 520px; margin-top: 16px; }
+
+    /* Problem */
+    .problem { background: var(--ink); color: var(--white); }
+    .problem .section-label { color: #86efac; }
+    .problem .section-title { color: var(--white); max-width: 800px; }
+    .problem .section-sub { color: rgba(255,255,255,.55); max-width: 600px; }
+    .problem-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2px; margin-top: 60px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; overflow: hidden; }
+    .problem-card { background: rgba(255,255,255,.03); padding: 36px 32px; border-right: 1px solid rgba(255,255,255,.06); transition: background .3s; }
+    .problem-card:hover { background: rgba(255,255,255,.06); }
+    .problem-card:last-child { border-right: none; }
+    .p-icon { font-size: 32px; margin-bottom: 20px; }
+    .p-title { font-size: 17px; font-weight: 600; color: var(--white); margin-bottom: 10px; }
+    .p-desc { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.65; }
+    .p-fine { margin-top: 16px; display: inline-flex; background: rgba(220,38,38,.15); border: 1px solid rgba(220,38,38,.3); color: #fca5a5; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: .3px; }
+
+    /* Features */
+    .features { background: var(--surface); }
+    .feat-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 24px; }
+    .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 56px; }
+    .feat-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 32px; transition: all .3s; cursor: default; }
+    .feat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.08); border-color: #86efac; }
+    .feat-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--accent-lt); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 20px; }
+    .feat-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+    .feat-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+    .feat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 20px; }
+    .tag { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 100px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+
+    /* Laws */
+    .laws-section { background: var(--white); }
+    .laws-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 48px; }
+    .law-card { border: 1px solid var(--border); border-radius: 14px; padding: 24px; display: flex; gap: 16px; transition: all .3s; }
+    .law-card:hover { border-color: #86efac; background: var(--accent-lt); }
+    .law-icon { width: 44px; height: 44px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .law-body { flex: 1; }
+    .law-name { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; letter-spacing: .3px; }
+    .law-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .law-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* Use Cases */
+    .usecases { background: var(--surface); }
+    .uc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 48px; }
+    .uc-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; text-align: center; transition: all .3s; }
+    .uc-card:hover { border-color: #86efac; transform: translateY(-2px); }
+    .uc-emoji { font-size: 36px; margin-bottom: 14px; }
+    .uc-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .uc-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* CTA */
+    .cta-section { background: linear-gradient(135deg, var(--ink) 0%, var(--ink-3) 100%); text-align: center; padding: 96px 5vw; }
+    .cta-section h2 { font-family: 'Montserrat', sans-serif; font-size: clamp(32px, 4vw, 56px); color: var(--white); letter-spacing: -.8px; margin-bottom: 20px; }
+    .cta-section h2 em { color: #86efac; font-style: italic; }
+    .cta-section p { color: rgba(255,255,255,.55); font-size: 16px; margin-bottom: 40px; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn-white { background: var(--white); color: var(--ink); box-shadow: 0 4px 20px rgba(255,255,255,.15); }
+    .btn-white:hover { background: var(--surface); transform: translateY(-1px); }
+    .btn-outline-white { background: transparent; color: rgba(255,255,255,.8); border: 1.5px solid rgba(255,255,255,.2); }
+    .btn-outline-white:hover { background: rgba(255,255,255,.08); }
+
+    /* ========================================================================== */
+    /* NEW FOOTER (KIM BẢO STYLE MOCKUP)                                          */
+    /* ========================================================================== */
+    .site-footer {
+      background: #0f172a; /* Nền tối sang trọng */
+      color: #94a3b8;
+      padding: 60px 5vw 20px;
+      border-top: 1px solid #1e293b;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1.5fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+    .ft-col-title {
+      color: white; font-size: 16px; font-weight: 600; margin-bottom: 20px;
+    }
+    
+    /* Brand Column */
+    .ft-brand .logo { display: flex; align-items: center; margin-bottom: 20px; text-decoration: none; }
+    .ft-brand .logo img { height: 180px; width: auto; object-fit: contain; transition: transform 0.3s; }
+    .ft-brand .logo img:hover { transform: scale(1.05); }
+
+    /* Sóng uốn lượn đa tầng chuyển động */
+    .footer-wave-container {
+      position: relative;
+      width: 100%;
+      height: 120px;
+      background: #081e23; /* Màu của partners-section */
+      overflow: hidden;
+      line-height: 0;
+    }
+    .animated-waves {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .parallax-waves > use {
+      animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
+    }
+    .parallax-waves > use:nth-child(1) {
+      animation-delay: -2s;
+      animation-duration: 12s;
+      fill: #064e3b; /* Xanh lá siêu đậm */
+      opacity: 0.7;
+    }
+    .parallax-waves > use:nth-child(2) {
+      animation-delay: -3s;
+      animation-duration: 18s;
+      fill: #14532d; /* Xanh lá đậm */
+      opacity: 0.5;
+    }
+    .parallax-waves > use:nth-child(3) {
+      animation-delay: -4s;
+      animation-duration: 25s;
+      fill: #22c55e; /* Xanh lá nhạt */
+      opacity: 0.3;
+    }
+    .parallax-waves > use:nth-child(4) {
+      animation-delay: -5s;
+      animation-duration: 35s;
+      fill: #a3e635; /* Xanh non */
+    }
+    @keyframes move-forever {
+      0% { transform: translate3d(-90px, 0, 0); }
+      100% { transform: translate3d(85px, 0, 0); }
+    }
+    @media (max-width: 768px) {
+      .footer-wave-container { height: 60px; }
+    }
+    .ft-slogan { font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+    /* Partners Section */
+    .partners-section {
+      background: #081e23;
+      padding: 60px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .partners-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
+    .partners-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 42px;
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .partners-sub {
+      color: rgba(255,255,255,0.6);
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .partners-slider {
+      width: 100%;
+      overflow: hidden;
+      padding: 20px 0;
+      mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+    }
+    .partners-track {
+      display: flex;
+      width: calc(250px * 12);
+      animation: scroll-partners 30s linear infinite;
+      gap: 50px;
+      align-items: center;
+    }
+    .partners-logo {
+      width: 200px;
+      height: 80px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: rgba(255,255,255,0.8);
+      font-size: 18px;
+      letter-spacing: 1px;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: all 0.3s;
+      flex-shrink: 0;
+    }
+    .partners-logo:hover {
+      background: rgba(255,255,255,0.08);
+      color: white;
+      transform: translateY(-5px);
+      border-color: var(--accent);
+    }
+    @keyframes scroll-partners {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(calc(-250px * 6)); }
+    }
+
+    /* Background Effects for Partners */
+    .partners-glow-1 {
+      position: absolute; width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(22,163,74,0.15) 0%, transparent 70%);
+      top: -100px; left: -100px; border-radius: 50%; filter: blur(60px);
+      animation: float-glow 15s ease-in-out infinite alternate;
+    }
+    .partners-glow-2 {
+      position: absolute; width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(22,163,74,0.1) 0%, transparent 70%);
+      bottom: -150px; right: -150px; border-radius: 50%; filter: blur(80px);
+      animation: float-glow 20s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes float-glow {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(50px, 30px) scale(1.1); }
+    }
+    .partners-floating-dots {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+      background-size: 40px 40px; opacity: 0.3;
+      animation: shift-dots 60s linear infinite;
+    }
+    @keyframes shift-dots {
+      from { background-position: 0 0; }
+      to { background-position: 40px 40px; }
+    }
+
+    .partners-glimmers {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+    .glimmer {
+      position: absolute; width: 3px; height: 3px;
+      background: white; border-radius: 50%;
+      filter: blur(1px); box-shadow: 0 0 10px white;
+      opacity: 0; animation: glimmer-blink var(--d) infinite;
+    }
+    @keyframes glimmer-blink {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 0.6; transform: scale(1.2); }
+    }
+
+    /* Spinning Protect Rings */
+    .protect-ring {
+      position: absolute;
+      width: 500px; height: 500px;
+      border: 2px dashed rgba(22, 163, 74, 0.15);
+      border-radius: 50%;
+      top: -200px; left: -150px;
+      animation: spin-ring 40s linear infinite;
+      pointer-events: none;
+    }
+    .protect-ring::after {
+      content: '';
+      position: absolute;
+      top: -10px; left: 50%;
+      width: 20px; height: 20px;
+      background: rgba(22, 163, 74, 0.5);
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(22, 163, 74, 0.8);
+    }
+    .protect-ring-2 {
+      position: absolute;
+      width: 300px; height: 300px;
+      border: 1px dotted rgba(22, 163, 74, 0.25);
+      border-radius: 50%;
+      bottom: -100px; right: 20px;
+      animation: spin-ring 30s linear infinite reverse;
+      pointer-events: none;
+    }
+    .protect-ring-2::after {
+      content: '';
+      position: absolute;
+      bottom: 10%; right: 10%;
+      width: 10px; height: 10px;
+      background: rgba(22, 163, 74, 0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(22, 163, 74, 0.8);
+    }
+    @keyframes spin-ring {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .ft-badge-hs {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #dc2626; color: white; padding: 6px 12px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; box-shadow: 0 4px 10px rgba(220,38,38,0.2);
+      animation: glow-pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { 
+        box-shadow: 0 0 5px rgba(220,38,38,0.4), 0 0 10px rgba(220,38,38,0.2);
+        opacity: 0.9;
+      }
+      50% { 
+        box-shadow: 0 0 20px rgba(220,38,38,0.8), 0 0 30px rgba(220,38,38,0.4);
+        opacity: 1;
+      }
+    }
+    
+    /* Links Column */
+    .ft-links { list-style: none; padding: 0; margin: 0; }
+    .ft-links li { margin-bottom: 12px; }
+    .ft-links a { color: #94a3b8; text-decoration: none; font-size: 13px; transition: 0.3s; cursor: pointer;}
+    .ft-links a:hover { color: var(--accent); padding-left: 5px; }
+
+    /* Contact Column */
+    .ft-contact { list-style: none; padding: 0; margin: 0 0 20px 0;}
+    .ft-contact li { display: flex; gap: 10px; font-size: 13px; margin-bottom: 15px; line-height: 1.5; }
+    .ft-contact .ico { color: var(--accent); font-size: 16px; }
+    .ft-socials { display: flex; gap: 10px; margin-bottom: 20px; }
+    .ft-social-btn {
+      width: 32px; height: 32px; border-radius: 6px; background: #1e293b;
+      display: flex; align-items: center; justify-content: center; color: white;
+      text-decoration: none; transition: 0.3s; font-size: 14px;
+    }
+    .ft-social-btn:hover { background: var(--accent); transform: translateY(-2px); }
+    .ft-visitor {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #1e293b; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: white;
+    }
+    .ft-visitor .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+
+    /* Map & Cert Column */
+    .ft-map-mockup {
+      width: 100%; height: 120px; background: #e2e8f0; border-radius: 8px; margin-bottom: 15px;
+      display: flex; align-items: center; justify-content: center; flex-direction: column;
+      color: #64748b; font-size: 12px; position: relative; overflow: hidden;
+    }
+    .ft-map-mockup::before {
+      content: ''; position: absolute; inset: 0;
+      background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px); background-size: 12px 12px;
+    }
+    .ft-map-mockup span { position: relative; z-index: 1; font-weight: bold; color: #334155; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px;}
+    .bct-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      border: 1px solid #3b82f6; color: #3b82f6; padding: 6px 12px; border-radius: 8px;
+      font-size: 11px; font-weight: 700; background: rgba(59,130,246,0.05);
+    }
+    .bct-tick {
+      background: #3b82f6; color: white; border-radius: 50%; width: 16px; height: 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 10px;
+    }
+
+    .footer-bottom {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; flex-wrap: wrap; gap: 15px;
+    }
+    .ft-bottom-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .ft-bottom-links a { color: #94a3b8; text-decoration: none; transition: 0.3s; cursor: pointer; }
+    .ft-bottom-links a:hover { color: white; }
+
+    @media (max-width: 900px) { .footer-top { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .footer-top { grid-template-columns: 1fr; } .footer-bottom { flex-direction: column; text-align: center; justify-content: center;} .ft-bottom-links {justify-content: center;} }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    .reveal { opacity: 0; transform: translateY(32px); transition: all .7s cubic-bezier(.22,1,.36,1); }
+    .revealed { opacity: 1; transform: translateY(0); }
+
+    /* Các trang chuyên sâu chờ nội dung */
+    .chuyen-sau-container { padding: 160px 5vw 100px; min-height: 80vh; max-width: 1000px; margin: 0 auto; text-align: center; }
+    .chuyen-sau-box { background: var(--surface); border: 2px dashed var(--border); border-radius: 20px; padding: 80px 20px; }
+    .chuyen-sau-box .ico { font-size: 60px; margin-bottom: 20px; display: block; opacity: 0.8; }
+    .chuyen-sau-box h2 { font-family: 'Montserrat', sans-serif; font-size: 32px; color: var(--ink); margin-bottom: 10px; }
+    .chuyen-sau-box p { color: var(--muted); font-size: 16px; }
+
+    /* Hiệu ứng nút bấm "Báo Động" */
+    .btn-pulse {
+        position: relative;
+        background: var(--red);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        overflow: hidden;
+        transition: 0.3s;
+        border: none;
+        cursor: pointer;
+        display: inline-block;
+    }
+    .btn-pulse:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+    }
+    .btn-pulse::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+        animation: ripple 2s infinite;
+    }
+    @keyframes ripple {
+        0% { transform: scale(0, 0); opacity: 1; }
+        20% { transform: scale(25, 25); opacity: 1; }
+        100% { opacity: 0; transform: scale(40, 40); }
+    }
+
+    /* Thẻ Vấn Đề tương tác */
+    .problem-deep-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border);
+        padding: 30px;
+        border-radius: 20px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .problem-deep-card:hover {
+        background: white;
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        border-color: var(--red);
+    }
+    .warning-icon {
+        font-size: 40px;
+        margin-bottom: 20px;
+        display: inline-block;
+        animation: shake 3s infinite;
+    }
+    @keyframes shake {
+        0%, 100% { transform: rotate(0deg); }
+        10%, 30%, 50%, 70%, 90% { transform: rotate(-5deg); }
+        20%, 40%, 60%, 80% { transform: rotate(5deg); }
+    }
+
+    /* ─── FLOATING CONTACTS ─── */
+    .floating-contact {
+      position: fixed;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+    .fc-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: transform 0.3s ease;
+      box-shadow: -2px 4px 12px rgba(0,0,0,0.1);
+    }
+    .fc-btn:hover {
+      transform: translateX(-5px);
+    }
+    .fc-review {
+      background: #336940;
+      color: white;
+      padding: 20px 10px;
+      border-radius: 16px 0 0 16px;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .fc-review .fc-text {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 2px;
+    }
+    .fc-review svg {
+      width: 24px;
+      height: 24px;
+      fill: white;
+    }
+    .fc-social {
+      width: 54px;
+      height: 54px;
+      background: #e2e8f0;
+      border-radius: 27px 0 0 27px;
+      padding: 10px;
+      padding-right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fc-social img {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="site-header" id="site-header">
+    <div class="top-bar">
+      <div class="top-bar-left">
+      </div>
+      <div class="top-bar-right">
+        <div class="top-bar-item" style="border-left: none; padding-left: 0; margin-left: 0;">
+          🌐
+          <select class="lang-select" id="lang-switcher">
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="zh">中文</option>
+            <option value="ko">한국어</option>
+            <option value="ja">日本語</option>
+            <option value="ru">Русский</option>
+            <option value="es">Español</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="th">ไทย</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <nav>
+      <a onclick="switchPage('home')" class="nav-logo">
+        <img src="/static/logo.png" alt="VietFood Guard">
+      </a>
+      <div class="nav-links">
+        <a onclick="switchPage('home')" class="nav-btn active" data-i18n="nav_home">Trang chủ</a>
+        <a onclick="switchPage('vande')" class="nav-btn" data-i18n="nav_problem">Vấn đề</a>
+        <a onclick="switchPage('giaiphap')" class="nav-btn" data-i18n="nav_solution">Giải pháp</a>
+        <a onclick="switchPage('phaply')" class="nav-btn" data-i18n="nav_legal">Pháp lý</a>
+        <a onclick="switchPage('doituong')" class="nav-btn" data-i18n="nav_target">Đối tượng</a>
+      </div>
+      <a href="/login" class="btn btn-primary" data-i18n="nav_login">Truy cập hệ thống →</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <div id="page-home" class="page-section active-page">
+      <section class="hero">
+        <div id="tsparticles"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-badge"><span class="dot"></span>Powered by YOLOv8 AI Real-time</div>
+        <h1 data-i18n="hero_title">Bảo vệ bếp ăn của bạn<br>bằng <span class="highlight">Trí tuệ nhân tạo</span></h1>
+        <p class="hero-sub" data-i18n="hero_sub">Hệ thống giám sát vệ sinh an toàn thực phẩm 24/7 — tự động phát hiện vi phạm, gửi cảnh báo tức thì, tuân thủ 100% Luật ATTP 2010.</p>
+        <div class="hero-cta">
+          <a href="/login" class="btn btn-primary btn-lg" data-i18n="hero_cta_start">🚀 Bắt đầu ngay</a>
+          <a onclick="switchPage('giaiphap')" class="btn btn-ghost btn-lg" data-i18n="hero_cta_feat">Xem tính năng</a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-num">150<span>+</span></div>
+            <div class="stat-label">Dự Án Hoàn Thành</div>
+            <div class="stat-sub">Đã triển khai thành công</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">10<span>K+</span></div>
+            <div class="stat-label">Người Dùng Hàng Tháng</div>
+            <div class="stat-sub">Tin dùng dịch vụ</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">24<span>/7</span></div>
+            <div class="stat-label">Hỗ Trợ Khách Hàng</div>
+            <div class="stat-sub">Luôn luôn sẵn sàng</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-num">4.9<span>/5</span></div>
+            <div class="stat-label">Đánh Giá Trung Bình</div>
+            <div class="stat-sub">Từ cộng đồng đối tác</div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="cam-frame">
+            <div class="cam-bar">
+              <div class="cam-bar-left"><span class="cam-bar-logo">🛡️ VIETFOOD GUARD</span><span class="live-badge">● LIVE</span></div>
+              <span class="cam-bar-right" id="clock">--:--:--</span>
+            </div>
+            <div class="cam-inner">
+              <div class="cam-cell">
+                <div class="cam-cell-header"><span class="cam-dot alert"></span>CAM 01 · BẾP CHÍNH</div>
+                <div class="cam-body"><span class="icon">🧑🍳</span><div class="cam-alert-box">⚠️ PHÁT HIỆN VI PHẠM — KHÔNG ĐEO KHẨU TRANG</div></div>
+              </div>
+              <div class="cam-cell"><div class="cam-cell-header"><span class="cam-dot ok"></span>CAM 02 · KHU SƠ CHẾ</div><div class="cam-body"><span class="icon">✅</span></div></div>
+              <div class="cam-cell"><div class="cam-cell-header"><span class="cam-dot warn"></span>CAM 03 · KHO LẠNH</div><div class="cam-body"><span class="icon">❄️</span></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="problem home-section">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+          <div>
+            <div class="section-label" data-i18n="sec_label_1">Vấn đề thực tế</div>
+            <h2 class="section-title" data-i18n="sec_title_9">Vi phạm VSATTP không phải lúc nào cũng có người giám sát</h2>
+            <p class="section-sub" data-i18n="sec_sub_13">Một ca làm việc 8 tiếng — quản lý không thể có mặt 100%. Rủi ro xảy ra khi không ai để ý.</p>
+          </div>
+          <a onclick="switchPage('vande')" class="btn btn-outline-white" style="cursor: pointer;">Phân tích chuyên sâu →</a>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-card"><div class="p-icon">😷</div><div class="p-title" data-i18n="p_title_15">Không đeo khẩu trang</div><div class="p-desc" data-i18n="p_desc_19">Vi phạm phổ biến nhất trong bếp ăn. Nguy cơ lây nhiễm vi khuẩn qua giọt bắn trực tiếp vào thực phẩm.</div><span class="p-fine" data-i18n="p_fine_23">Phạt đến 3.000.000 VNĐ</span></div>
+          <div class="problem-card"><div class="p-icon">💍</div><div class="p-title" data-i18n="p_title_16">Đeo trang sức khi chế biến</div><div class="p-desc" data-i18n="p_desc_20">Nhẫn, vòng tay, đồng hồ là nguồn ô nhiễm vật lý hàng đầu theo QCVN 8-3:2012/BYT.</div><span class="p-fine" data-i18n="p_fine_24">Phạt đến 20.000.000 VNĐ</span></div>
+          <div class="problem-card"><div class="p-icon">🔪</div><div class="p-title" data-i18n="p_title_17">Dùng sai màu thớt</div><div class="p-desc" data-i18n="p_desc_21">Dùng thớt thịt sống để cắt thực phẩm chín hoặc rau — nguyên nhân nhiễm chéo Salmonella, E.coli.</div><span class="p-fine" data-i18n="p_fine_25">Ngộ độc tập thể: đến 150 triệu VNĐ</span></div>
+          <div class="problem-card"><div class="p-icon">🧤</div><div class="p-title" data-i18n="p_title_18">Thiếu bảo hộ lao động</div><div class="p-desc" data-i18n="p_desc_22">Không đội mũ, không găng tay khu sơ chế — vi phạm trực tiếp Điều 26 Luật ATTP 2010.</div><span class="p-fine" data-i18n="p_fine_26">Phạt đến 20.000.000 VNĐ</span></div>
+        </div>
+      </section>
+
+      <section class="features home-section">
+        <div class="feat-header">
+          <div>
+            <div class="section-label" data-i18n="sec_label_2">Giải pháp AI</div>
+            <h2 class="section-title" data-i18n="sec_title_10">Hệ thống giám sát toàn diện, tự động 24/7</h2>
+          </div>
+          <a onclick="switchPage('giaiphap')" class="btn btn-primary" style="cursor: pointer;">Chi tiết giải pháp →</a>
+        </div>
+        <div class="feat-grid">
+          <div class="feat-card reveal"><div class="feat-icon">📷</div><div class="feat-title" data-i18n="feat_title_27">Nhận diện vi phạm theo thời gian thực</div><div class="feat-desc" data-i18n="feat_desc_33">Camera + AI YOLOv8 tự động phát hiện: không khẩu trang, không mũ bảo hộ, đeo trang sức, dùng sai thớt — trong chưa đến 2 giây.</div><div class="feat-tags"><span class="tag">YOLOv8</span><span class="tag">Real-time</span><span class="tag">&lt;2s</span></div></div>
+          <div class="feat-card reveal"><div class="feat-icon">📲</div><div class="feat-title" data-i18n="feat_title_28">Cảnh báo Telegram tức thì</div><div class="feat-desc" data-i18n="feat_desc_34">Khi phát hiện vi phạm, hệ thống tự động chụp ảnh bằng chứng và gửi thông báo ngay tới Telegram của quản lý — dù đang ở đâu.</div><div class="feat-tags"><span class="tag">Telegram Bot</span><span class="tag">Ảnh bằng chứng</span></div></div>
+          <div class="feat-card reveal"><div class="feat-icon">📊</div><div class="feat-title" data-i18n="feat_title_29">Dashboard quản lý trực quan</div><div class="feat-desc" data-i18n="feat_desc_35">Xem trực tiếp tất cả camera, thống kê vi phạm theo ngày, nhật ký chi tiết từng ca — tất cả trên một màn hình duy nhất.</div><div class="feat-tags"><span class="tag">Multi-camera</span><span class="tag">Live stats</span></div></div>
+          <div class="feat-card reveal"><div class="feat-icon">📋</div><div class="feat-title" data-i18n="feat_title_30">Nhật ký vi phạm tự động</div><div class="feat-desc" data-i18n="feat_desc_36">Lưu trữ toàn bộ lịch sử vi phạm với thời gian, loại vi phạm, tên nhân viên, khu vực — phục vụ kiểm tra nội bộ và đoàn thanh tra.</div><div class="feat-tags"><span class="tag">SQLite</span><span class="tag">Xuất báo cáo</span></div></div>
+          <div class="feat-card reveal"><div class="feat-icon">⚖️</div><div class="feat-title" data-i18n="feat_title_31">Tuân thủ đầy đủ pháp lý VN</div><div class="feat-desc" data-i18n="feat_desc_37">Hệ thống được xây dựng theo đúng Luật ATTP 2010, QCVN 8-3:2012/BYT, Nghị định 115/2018 và WHO Hand Hygiene 2019.</div><div class="feat-tags"><span class="tag">Luật ATTP 2010</span><span class="tag">QCVN 8-3</span></div></div>
+          <div class="feat-card reveal"><div class="feat-icon">🔧</div><div class="feat-title" data-i18n="feat_title_32">Dễ triển khai, không cần IT</div><div class="feat-desc" data-i18n="feat_desc_38">Chạy trên máy tính Windows thông thường với webcam. Không cần server đắt tiền hay kỹ thuật viên chuyên biệt. Cài đặt trong 10 phút.</div><div class="feat-tags"><span class="tag">FastAPI</span><span class="tag">Plug & Play</span></div></div>
+        </div>
+      </section>
+
+      <section class="laws-section home-section">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+          <div><div class="section-label" data-i18n="sec_label_3">Nền tảng pháp lý</div><h2 class="section-title" data-i18n="sec_title_11">Tuân thủ 100% văn bản pháp luật Việt Nam</h2><p class="section-sub" data-i18n="sec_sub_14">VietFood Guard được xây dựng dựa trên các quy định pháp lý hiện hành, đảm bảo doanh nghiệp luôn đúng luật.</p></div>
+          <a onclick="switchPage('phaply')" class="btn btn-ghost" style="cursor: pointer;">Tài liệu Pháp lý →</a>
+        </div>
+        <div class="laws-grid">
+          <div class="law-card reveal"><div class="law-icon">📜</div><div class="law-body"><div class="law-name" data-i18n="law_name_39">Luật số 55/2010/QH12</div><div class="law-title" data-i18n="law_title_45">Luật An Toàn Thực Phẩm 2010</div><div class="law-desc" data-i18n="law_desc_51">Điều 25–28 quy định điều kiện VSATTP nơi chế biến và cá nhân trực tiếp chế biến.</div></div></div>
+          <div class="law-card reveal"><div class="law-icon">⚖️</div><div class="law-body"><div class="law-name" data-i18n="law_name_40">Nghị định 115/2018/NĐ-CP</div><div class="law-title" data-i18n="law_title_46">Xử phạt vi phạm VSATTP</div><div class="law-desc" data-i18n="law_desc_52">Mức phạt từ 500K đến 150 triệu đồng. Đình chỉ hoạt động 1–3 tháng.</div></div></div>
+          <div class="law-card reveal"><div class="law-icon">🔬</div><div class="law-body"><div class="law-name" data-i18n="law_name_41">QCVN 8-3:2012/BYT</div><div class="law-title" data-i18n="law_title_47">Giới hạn tác nhân vật lý</div><div class="law-desc" data-i18n="law_desc_53">Quy định tóc, móng tay, trang sức — người chế biến là nguồn nguy hiểm số 1.</div></div></div>
+          <div class="law-card reveal"><div class="law-icon">🏥</div><div class="law-body"><div class="law-name" data-i18n="law_name_42">Thông tư 30/2012/TT-BYT</div><div class="law-title" data-i18n="law_title_48">Điều kiện ATTP bếp tập thể</div><div class="law-desc" data-i18n="law_desc_54">Nguyên tắc bếp một chiều, lưu mẫu kiểm tra bắt buộc khi ngộ độc.</div></div></div>
+          <div class="law-card reveal"><div class="law-icon">🤲</div><div class="law-body"><div class="law-name" data-i18n="law_name_43">WHO Hand Hygiene 2019</div><div class="law-title" data-i18n="law_title_49">Kỹ thuật rửa tay 7 bước</div><div class="law-desc" data-i18n="law_desc_55">AI đếm thời gian và nhận biết từng động tác rửa tay chuẩn WHO.</div></div></div>
+          <div class="law-card reveal"><div class="law-icon">🦠</div><div class="law-body"><div class="law-name" data-i18n="law_name_44">QCVN 8-1:2011/BYT</div><div class="law-title" data-i18n="law_title_50">Giới hạn vi sinh vật</div><div class="law-desc" data-i18n="law_desc_56">Giới hạn Salmonella, E.coli, Staph aureus — cơ sở để xây dựng quy trình phát hiện.</div></div></div>
+        </div>
+      </section>
+
+      <section class="usecases home-section">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 20px;">
+          <div><div class="section-label" data-i18n="sec_label_4">Đối tượng sử dụng</div><h2 class="section-title" data-i18n="sec_title_12">Phù hợp với mọi cơ sở chế biến thực phẩm</h2></div>
+          <a onclick="switchPage('doituong')" class="btn btn-ghost" style="cursor: pointer;">Chi tiết Mô hình →</a>
+        </div>
+        <div class="uc-grid">
+          <div class="uc-card reveal"><div class="uc-emoji">🍽️</div><div class="uc-name" data-i18n="uc_name_57">Nhà hàng & Khách sạn</div><div class="uc-desc" data-i18n="uc_desc_62">Giám sát khu bếp, khu sơ chế và phục vụ liên tục.</div></div>
+          <div class="uc-card reveal"><div class="uc-emoji">🥘</div><div class="uc-name" data-i18n="uc_name_58">Quán ăn & Bếp tập thể</div><div class="uc-desc" data-i18n="uc_desc_63">Đảm bảo tiêu chuẩn khi phục vụ số lượng lớn người ăn.</div></div>
+          <div class="uc-card reveal"><div class="uc-emoji">🏭</div><div class="uc-name" data-i18n="uc_name_59">Nhà máy thực phẩm</div><div class="uc-desc" data-i18n="uc_desc_64">Giám sát dây chuyền sản xuất, kho bảo quản theo ca.</div></div>
+          <div class="uc-card reveal"><div class="uc-emoji">🏫</div><div class="uc-name" data-i18n="uc_name_60">Trường học & Canteen</div><div class="uc-desc" data-i18n="uc_desc_65">Bảo vệ học sinh — đối tượng dễ bị ngộ độc nhất.</div></div>
+          <div class="uc-card reveal"><div class="uc-emoji">🏪</div><div class="uc-name" data-i18n="uc_name_61">Cơ sở sản xuất nhỏ</div><div class="uc-desc" data-i18n="uc_desc_66">Giải pháp chi phí thấp, không cần đội IT riêng.</div></div>
+        </div>
+      </section>
+    </div>
+
+    <div id="page-vande" class="page-section">
+      <div class="deep-container" style="max-width: 1100px; margin: 0 auto; padding: 160px 5vw 60px;">
+        
+        <div style="text-align: center; margin-bottom: 70px;">
+          <div class="section-label" data-i18n="sec_label_5">The Invisible Risks</div>
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 48px; color: var(--ink); line-height: 1.1;">
+            Khi Quản Lý Vắng Mặt, <br><span class="highlight" style="color: var(--red);">Rủi Ro Sẽ Lên Ngôi</span>
+          </h2>
+          <p style="color: var(--muted); margin-top: 20px; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.7; font-size: 18px;">
+            Một ca làm việc 8 tiếng tại bếp ăn công nghiệp có hàng ngàn thao tác. Chỉ cần 1 giây lơ là, uy tín gầy dựng hàng chục năm có thể tan biến.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-bottom: 60px;">
+          
+          <div class="problem-deep-card">
+            <span class="warning-icon">🦠</span>
+            <h3 style="margin-bottom: 15px; color: var(--ink);" data-i18n="vande_h3_67">Con người là nguồn ô nhiễm số 1</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6;" data-i18n="vande_p_70">
+              Theo <strong>QCVN 8-3:2012/BYT</strong>, người trực tiếp chế biến là tác nhân vật lý và vi sinh hàng đầu[cite: 64, 397]. Các hành vi như không đeo khẩu trang hoặc tóc lộ ra ngoài mũ tạo điều kiện cho vi khuẩn lan truyền qua giọt bắn và bề mặt tiếp xúc[cite: 66, 390].
+            </p>
+          </div>
+
+          <div class="problem-deep-card">
+            <span class="warning-icon">🔪</span>
+            <h3 style="margin-bottom: 15px; color: var(--ink);" data-i18n="vande_h3_68">Ma trận nhiễm chéo "Âm thầm"</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6;" data-i18n="vande_p_71">
+              Sử dụng thớt đỏ (thịt sống) để cắt rau hoặc thực phẩm chín là lỗi "kinh điển" gây nhiễm khuẩn <strong>Salmonella và E.coli</strong>[cite: 155, 209]. Việc rửa rau dưới 3 lần hoặc rửa qua loa không thể loại bỏ hết trứng ký sinh trùng theo quy chuẩn[cite: 128, 132].
+            </p>
+          </div>
+
+          <div class="problem-deep-card">
+            <span class="warning-icon">⚖️</span>
+            <h3 style="margin-bottom: 15px; color: var(--ink);" data-i18n="vande_h3_69">Hậu quả pháp lý & Tài chính</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6;" data-i18n="vande_p_72">
+              Không chỉ là nhắc nhở, vi phạm nghiêm trọng gây ngộ độc tập thể (≥5 người) có thể bị phạt tới <strong>150 triệu VNĐ</strong> và bị truy cứu trách nhiệm hình sự theo Điều 317 BLHS[cite: 57]. Việc đình chỉ hoạt động từ 1-3 tháng đồng nghĩa với việc phá sản dây chuyền.
+            </p>
+          </div>
+
+        </div>
+
+        <div style="background: var(--ink); border-radius: 30px; padding: 50px; color: white; box-shadow: 0 30px 60px rgba(0,0,0,0.2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h3 style="font-family: 'DM Serif Display'; font-size: 32px; margin-bottom: 10px;">⚠️ Danh Mục Hành Vi Bị Cấm (QT-07)</h3>
+                <p style="color: #94a3b8; font-size: 14px;">Mọi hành động dưới đây đều được AI ghi nhận làm bằng chứng thanh tra[cite: 403].</p>
+            </div>
+            <button class="btn-pulse" onclick="switchPage('giaiphap')">XEM CÁCH AI NGĂN CHẶN →</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px;">
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <ul style="list-style: none; font-size: 14px; line-height: 2.2;">
+                  <li>❌ <strong style="color: var(--red);">Dùng tay trần:</strong> Tiếp xúc trực tiếp thực phẩm chín[cite: 307].</li>
+                  <li data-i18n="li_text_91">❌ <strong style="color: var(--red);">Ô nhiễm vật lý:</strong> Đeo trang sức, đồng hồ khi chế biến[cite: 66, 390].</li>
+                  <li data-i18n="li_text_92">❌ <strong style="color: var(--red);">Hành vi thiếu vệ sinh:</strong> Ăn uống, nhai kẹo cao su trong bếp[cite: 311, 313].</li>
+                  <li data-i18n="li_text_93">❌ <strong style="color: var(--red);">Sai quy chuẩn:</strong> Hút thuốc trong khu vực bếp/phục vụ[cite: 309].</li>
+                </ul>
+            </div>
+            <div style="background: rgba(255, 255, 255, 0.03); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <ul style="list-style: none; font-size: 14px; line-height: 2.2;">
+                  <li data-i18n="li_text_94">❌ <strong style="color: var(--red);">Mất vệ sinh chéo:</strong> Nhúng lại muỗng nêm đã dùng vào nồi[cite: 321].</li>
+                  <li data-i18n="li_text_95">❌ <strong style="color: var(--red);">Cẩu thả:</strong> Để đồ ăn trực tiếp trên sàn nhà (dù ngắn hạn)[cite: 317].</li>
+                  <li data-i18n="li_text_96">❌ <strong style="color: var(--red);">Chạm bẩn:</strong> Sờ tay lên mặt, tóc khi đang mang món[cite: 315].</li>
+                  <li data-i18n="li_text_97">❌ <strong style="color: var(--red);">Thu dọn bẩn:</strong> Dùng tay xáo trực tiếp vào bát đĩa dơ[cite: 323].</li>
+                </ul>
+            </div>
+          </div>
+          
+          <div style="margin-top: 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px;">
+            <p style="font-style: italic; color: #94a3b8; font-size: 13px;">"An toàn thực phẩm không phải là đích đến, đó là một quá trình giám sát không ngừng nghỉ."</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div id="page-giaiphap" class="page-section">
+      <div class="deep-container" style="max-width: 1100px; margin: 0 auto; padding: 160px 5vw 60px;">
+        
+        <div style="margin-bottom: 60px;">
+          <div class="section-label" data-i18n="sec_label_6">AI Implementation</div>
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 42px; line-height: 1.1; color: var(--ink);">
+            Hệ Sinh Thái Giám Sát <br><span class="highlight">Bằng Công Nghệ YOLOv8</span>
+          </h2>
+          <p style="color: var(--muted); margin-top: 20px; max-width: 700px; line-height: 1.7;">
+            VietFood Guard ứng dụng mô hình Deep Learning xử lý luồng video trực tiếp từ camera (RTSP) với tốc độ nhận diện dưới 2 giây, đảm bảo giám sát liên tục mọi ngóc ngách của bếp ăn.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-bottom: 60px;">
+          
+          <div class="card" style="position: relative; overflow: hidden; border-top: 4px solid var(--accent);">
+            <div style="font-size: 12px; font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;" data-i18n="gp_badge_73">Lớp 01: Nhân sự</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_74">Kiểm soát Trang phục (PPE)</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_82">
+              Tự động nhận diện và cảnh báo nếu nhân viên vi phạm Điều 26 Luật ATTP 2010[cite: 390]:
+            </p>
+            <ul style="list-style: none; font-size: 13px; line-height: 2;">
+              <li data-i18n="li_text_98">✅ Phát hiện tóc lộ ra ngoài mũ bảo hộ</li>
+              <li data-i18n="li_text_99">✅ Kiểm tra đeo khẩu trang kín mũi & miệng</li>
+              <li data-i18n="li_text_100">✅ Cảnh báo thiếu găng tay tại khu sơ chế</li>
+            </ul>
+          </div>
+
+          <div class="card" style="position: relative; overflow: hidden; border-top: 4px solid var(--amber);">
+            <div style="font-size: 12px; font-weight: 800; color: var(--amber); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Lớp 02: Vệ sinh</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_75">Vệ sinh tay chuẩn WHO</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_83">
+              AI đếm thời gian và nhận diện chính xác 7 động tác rửa tay theo hướng dẫn WHO 2019[cite: 67, 68]:
+            </p>
+            <ul style="list-style: none; font-size: 13px; line-height: 2;">
+              <li data-i18n="li_text_101">⏱️ Đếm ngược tối thiểu 20 giây mỗi lần rửa</li>
+              <li data-i18n="li_text_102">📷 Nhận diện đủ 7 bước (mu, kẽ, móng, cái...)</li>
+              <li data-i18n="li_text_103">⚠️ Cảnh báo ngay nếu nhân viên rửa qua loa</li>
+            </ul>
+          </div>
+
+          <div class="card" style="position: relative; overflow: hidden; border-top: 4px solid var(--red);">
+            <div style="font-size: 12px; font-weight: 800; color: var(--red); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Lớp 03: Quy trình</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_76">Chống nhiễm chéo thớt</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_84">
+              Sử dụng AI phân biệt hệ thống thớt 4 màu chuẩn để ngăn chặn vi khuẩn Salmonella & E.coli[cite: 155]:
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; font-weight: 700;">
+              <div style="background: #fee2e2; color: #b91c1c; padding: 6px; border-radius: 4px; text-align: center;">ĐỎ: THỊT SỐNG</div>
+              <div style="background: #dcfce7; color: #15803d; padding: 6px; border-radius: 4px; text-align: center;">XANH: RAU CỦ</div>
+              <div style="background: #f1f5f9; color: #475569; padding: 6px; border-radius: 4px; text-align: center;">TRẮNG: ĐỒ CHÍN</div>
+              <div style="background: #fef3c7; color: #b45309; padding: 6px; border-radius: 4px; text-align: center;">VÀNG: HẢI SẢN</div>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="background: var(--ink); border-radius: 24px; padding: 50px; color: white;">
+          <h3 style="text-align: center; margin-bottom: 40px; font-family: 'DM Serif Display'; font-size: 32px;">Cơ Chế Phản Hồi Tức Thì</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 16px; border-left: 4px solid var(--accent);">
+              <div style="font-size: 32px; margin-bottom: 15px;">📲</div>
+              <h4 style="margin-bottom: 10px;">Telegram Bot Cảnh Báo</h4>
+              <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                Khi phát hiện vi phạm (như nhúng muỗng nêm lại vào nồi [cite: 390]), hệ thống tự động chụp ảnh bằng chứng gửi thẳng tới nhóm Telegram quản lý.
+              </p>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 16px; border-left: 4px solid var(--accent);">
+              <div style="font-size: 32px; margin-bottom: 15px;">📂</div>
+              <h4 style="margin-bottom: 10px;">Nhật Ký Số SQLite</h4>
+              <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                Mọi lỗi vi phạm được ghi lại thành nhật ký điện tử không thể sửa xóa, phục vụ công tác thanh tra của Bộ Y tế và đánh giá KPI nhân sự.
+              </p>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 30px; border-radius: 16px; border-left: 4px solid var(--accent);">
+              <div style="font-size: 32px; margin-bottom: 15px;">🎥</div>
+              <h4 style="margin-bottom: 10px;">Kết nối Camera sẵn có</h4>
+              <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
+                Không cần đầu tư hệ thống mới. Chỉ cần link RTSP, VietFood Guard tích hợp nhanh chóng vào hạ tầng camera hiện tại của cơ sở trong 10 phút.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    
+    <div id="page-phaply" class="page-section">
+      <div class="inner-legal-container" style="padding: 160px 5vw 60px; max-width: 1100px; margin: 0 auto;">
+        
+        <div style="text-align: center; margin-bottom: 60px;">
+          <div class="section-label" data-i18n="sec_label_7">Legal Foundation</div>
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 42px; color: var(--ink);">Nền Tảng Pháp Lý <br><span class="highlight">VSATTP Việt Nam</span></h2>
+          <p style="color: var(--muted); margin-top: 15px;">Tổng hợp đầy đủ văn bản pháp luật hiện hành áp dụng cho nhà hàng, khách sạn và bếp ăn tập thể.</p>
+        </div>
+
+        <div class="legal-block" style="margin-bottom: 50px;">
+          <h3 style="font-size: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--topbar-bg);">
+            <span style="background: var(--accent); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">01</span> 
+            Hệ Thống Văn Bản Pháp Luật
+          </h3>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+              <thead>
+                <tr style="background: var(--topbar-bg); color: white; text-align: left;">
+                  <th style="padding: 18px;">Văn bản</th>
+                  <th style="padding: 18px;">Cơ quan ban hành</th>
+                  <th style="padding: 18px;">Nội dung chính</th>
+                </tr>
+              </thead>
+              <tbody style="font-size: 14px; color: var(--ink-2);">
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 18px; font-weight: 700;">Luật ATTP 2010 <br>(55/2010/QH12)</td>
+                  <td style="padding: 18px;">Quốc hội</td>
+                  <td style="padding: 18px;">Điều 25-28: Quy định điều kiện VSATTP nơi chế biến và cá nhân trực tiếp chế biến.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border); background: var(--surface);">
+                  <td style="padding: 18px; font-weight: 700;">Nghị định 115/2018/NĐ-CP</td>
+                  <td style="padding: 18px;">Chính phủ</td>
+                  <td style="padding: 18px;">Quy định xử phạt vi phạm hành chính về ATTP. Mức phạt tối đa 100 triệu VNĐ.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border);">
+                  <td style="padding: 18px; font-weight: 700;">QCVN 8-3:2012/BYT</td>
+                  <td style="padding: 18px;">Bộ Y tế</td>
+                  <td style="padding: 18px;">Giới hạn tác nhân vật lý (tóc, móng tay, trang sức). Người chế biến là nguồn nguy hiểm #1.</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border); background: var(--surface);">
+                  <td style="padding: 18px; font-weight: 700;">Thông tư 30/2012/TT-BYT</td>
+                  <td style="padding: 18px;">Bộ Y tế</td>
+                  <td style="padding: 18px;">Điều kiện ATTP bếp ăn tập thể. Nguyên tắc bếp một chiều và lưu mẫu kiểm tra.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="legal-block" style="margin-bottom: 50px;">
+          <h3 style="font-size: 20px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--red);">
+            <span style="background: var(--red); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">02</span> 
+            Khung Xử Phạt Vi Phạm VSATTP
+          </h3>
+          <div class="penalty-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px;">
+            <div style="background: #fff5f5; border-left: 4px solid var(--red); padding: 20px; border-radius: 8px;">
+              <div style="color: var(--red); font-weight: 800; font-size: 12px; text-transform: uppercase;">Vi phạm nhẹ</div>
+              <div style="font-size: 20px; font-weight: 700; margin: 8px 0; color: var(--ink);">500K - 3 Triệu</div>
+              <p style="font-size: 13px; color: var(--muted);">Lỗi không bảo hộ, không mũ, không khẩu trang lần đầu.</p>
+            </div>
+            <div style="background: #fff9db; border-left: 4px solid var(--amber); padding: 20px; border-radius: 8px;">
+              <div style="color: var(--amber); font-weight: 800; font-size: 12px; text-transform: uppercase;">Có tính tái phạm</div>
+              <div style="font-size: 20px; font-weight: 700; margin: 8px 0; color: var(--ink);">3 Triệu - 20 Triệu</div>
+              <p style="font-size: 13px; color: var(--muted);">Tái phạm sau nhắc nhở hoặc không có giấy chứng nhận ATTP.</p>
+            </div>
+            <div style="background: #333; border-left: 4px solid #fff; padding: 20px; border-radius: 8px; color: white;">
+              <div style="color: #86efac; font-weight: 800; font-size: 12px; text-transform: uppercase;">Nghiêm trọng / Ngộ độc</div>
+              <div style="font-size: 20px; font-weight: 700; margin: 8px 0; color: white;">Đến 150 Triệu VNĐ</div>
+              <p style="font-size: 13px; color: rgba(255,255,255,0.6);">Gây ngộ độc tập thể (≥5 người). Đình chỉ hoạt động & truy cứu hình sự.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="background: var(--surface); padding: 40px; border-radius: 16px; border: 1px solid var(--border);">
+          <h3 style="font-size: 18px; margin-bottom: 20px; color: var(--ink);">Các văn bản quy chuẩn bổ trợ:</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="display: flex; align-items: start; gap: 10px; font-size: 13px;">
+              <span style="color: var(--accent);">✔</span>
+              <span><strong>QCVN 8-1:2011/BYT:</strong> Giới hạn vi sinh vật (Salmonella, E.coli) trong thực phẩm.</span>
+            </div>
+            <div style="display: flex; align-items: start; gap: 10px; font-size: 13px;">
+              <span style="color: var(--accent);">✔</span>
+              <span><strong>Nghị định 155/2018/NĐ-CP:</strong> Thủ tục cấp Giấy CN đủ điều kiện ATTP.</span>
+            </div>
+            <div style="display: flex; align-items: start; gap: 10px; font-size: 13px;">
+              <span style="color: var(--accent);">✔</span>
+              <span><strong>WHO Hand Hygiene 2019:</strong> Kỹ thuật rửa tay 7 bước chuẩn y tế quốc tế.</span>
+            </div>
+            <div style="display: flex; align-items: start; gap: 10px; font-size: 13px;">
+              <span style="color: var(--accent);">✔</span>
+              <span><strong>ScienceDirect 2025:</strong> Ứng dụng AI trong cải thiện hành vi an toàn thực phẩm.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="page-doituong" class="page-section">
+      <div class="deep-container" style="max-width: 1100px; margin: 0 auto; padding: 160px 5vw 60px;">
+        
+        <div style="text-align: center; margin-bottom: 70px;">
+          <div class="section-label" data-i18n="sec_label_8">Target Models</div>
+          <h2 style="font-family: 'Montserrat', sans-serif; font-size: 48px; color: var(--ink); line-height: 1.1;">
+            Mô Hình Ứng Dụng <br><span class="highlight">Thiết Kế Riêng Cho Từng Quy Mô</span>
+          </h2>
+          <p style="color: var(--muted); margin-top: 20px; max-width: 800px; margin-left: auto; margin-right: auto; line-height: 1.7; font-size: 18px;">
+            Dù bạn là một cơ sở sản xuất nhỏ hay chuỗi nhà hàng 5 sao, VietFood Guard đều có cấu hình AI phù hợp để đảm bảo tuân thủ 100% Luật ATTP 2010[cite: 5, 54].
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-bottom: 60px;">
+          
+          <div class="card" style="border-top: 4px solid var(--accent);">
+            <div style="font-size: 40px; margin-bottom: 20px;">🍽️</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_77">Nhà hàng & Khách sạn</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_85">
+                Tập trung vào tính chuyên nghiệp của nhân viên phục vụ và bếp mở. AI giám sát các hành vi cấm như dùng tay trần chia thức ăn hoặc nhúng muỗng nêm lại vào nồi[cite: 194, 307].
+            </p>
+            <div style="background: var(--surface); padding: 15px; border-radius: 10px; font-size: 12px;">
+                <strong>Điểm cốt lõi:</strong> Bảo vệ uy tín thương hiệu cao cấp, tránh các sự cố ảnh hưởng đến trải nghiệm khách hàng.
+            </div>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--amber);">
+            <div style="font-size: 40px; margin-bottom: 20px;">🥘</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_78">Quán ăn & Bếp tập thể</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_86">
+                Áp dụng nghiêm ngặt nguyên tắc bếp một chiều theo Điều 28 Luật ATTP[cite: 250]. AI tự động nhắc nhở quy trình <strong>lưu mẫu thực phẩm 100g/món</strong> bắt buộc trong 24-48h.
+            </p>
+            <div style="background: var(--surface); padding: 15px; border-radius: 10px; font-size: 12px;">
+                <strong>Điểm cốt lõi:</strong> Giảm thiểu rủi ro ngộ độc tập thể ($\ge 5$ người) với mức phạt lên đến 150 triệu VNĐ[cite: 57].
+            </div>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--ink);">
+            <div style="font-size: 40px; margin-bottom: 20px;">🏭</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_79">Nhà máy thực phẩm</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_87">
+                Kiểm soát nhiệt độ bảo quản lạnh cho dây chuyền sản xuất lớn. AI cảnh báo khi thịt tươi để ở nhiệt độ phòng quá 2 giờ (Vùng nguy hiểm $5-60^\circ C$)[cite: 164, 223].
+            </p>
+            <div style="background: var(--surface); padding: 15px; border-radius: 10px; font-size: 12px;">
+                <strong>Điểm cốt lõi:</strong> Giám sát tự động theo ca làm việc, đảm bảo chất lượng nguyên liệu đầu vào đồng nhất.
+            </div>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--accent);">
+            <div style="font-size: 40px; margin-bottom: 20px;">🏫</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_80">Trường học & Canteen</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_88">
+                Bảo vệ đối tượng nhạy cảm nhất. Hệ thống AI tập trung vào kỹ thuật <strong>rửa tay 7 bước chuẩn WHO</strong> [cite: 67] và kiểm soát trang phục mũ/khẩu trang của nhân viên chế biến suất ăn[cite: 66].
+            </p>
+            <div style="background: var(--surface); padding: 15px; border-radius: 10px; font-size: 12px;">
+                <strong>Điểm cốt lõi:</strong> Tuân thủ Thông tư 30/2012/TT-BYT về điều kiện ATTP bếp ăn trường học[cite: 14].
+            </div>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--muted);">
+            <div style="font-size: 40px; margin-bottom: 20px;">🏪</div>
+            <h3 style="margin-bottom: 15px;" data-i18n="gp_h3_81">Cơ sở sản xuất nhỏ</h3>
+            <p style="font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 20px;" data-i18n="gp_p_89">
+                Giải pháp chi phí thấp, tận dụng Camera IP sẵn có để kiểm soát nguyên tắc **FIFO (Nhập trước - Xuất trước)** và dán nhãn hạn sử dụng cho sản phẩm[cite: 230, 233].
+            </p>
+            <div style="background: var(--surface); padding: 15px; border-radius: 10px; font-size: 12px;">
+                <strong>Điểm cốt lõi:</strong> Chuẩn hóa quy trình vận hành cho hộ kinh doanh cá thể, không cần đội ngũ IT vận hành chuyên biệt.
+            </div>
+          </div>
+
+        </div>
+
+        <div style="background: linear-gradient(135deg, var(--topbar-bg) 0%, #111 100%); border-radius: 30px; padding: 60px; color: white; text-align: center; position: relative; overflow: hidden;">
+            <div style="position: relative; z-index: 2;">
+                <h3 style="font-family: 'DM Serif Display'; font-size: 36px; margin-bottom: 20px;">Sẵn Sàng Nâng Tầm Tiêu Chuẩn Bếp Ăn Của Bạn?</h3>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 40px; max-width: 600px; margin-left: auto; margin-right: auto;">Mọi mô hình đều được hưởng chính sách bảo trì 24/7 và cập nhật các mô hình AI mới nhất theo thay đổi của Luật ATTP Việt Nam.</p>
+                <button class="btn btn-primary btn-lg" onclick="window.location.href='/login'">BẮT ĐẦU TRIỂN KHAI NGAY →</button>
+            </div>
+            <div style="position: absolute; bottom: -20px; right: -20px; font-size: 150px; opacity: 0.05;">🛡️</div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <section class="cta-section">
+    <h2 data-i18n="cta_title">Bắt đầu bảo vệ bếp ăn<br>của bạn <em>ngay hôm nay</em></h2>
+    <p data-i18n="cta_desc">Triển khai trong 10 phút. Không cần kỹ thuật viên. Chạy 24/7 hoàn toàn tự động.</p>
+    <div class="cta-buttons">
+      <a href="/login" class="btn btn-white btn-lg" data-i18n="cta_btn1">🛡️ Truy cập Dashboard</a>
+      <a onclick="switchPage('giaiphap')" class="btn btn-outline-white btn-lg" style="cursor: pointer;" data-i18n="cta_btn2">Tìm hiểu thêm</a>
+    </div>
+  </section>
+
+  <section class="partners-section">
+    <div class="partners-glow-1"></div>
+    <div class="partners-glow-2"></div>
+    <div class="partners-floating-dots"></div>
+    <div class="protect-ring"></div>
+    <div class="protect-ring-2"></div>
+    <div class="partners-glimmers">
+      <!-- Mấy hạt lấp lánh ngẫu nhiên -->
+      <div class="glimmer" style="top: 20%; left: 15%; --d: 3s;"></div>
+      <div class="glimmer" style="top: 70%; left: 25%; --d: 5s;"></div>
+      <div class="glimmer" style="top: 40%; left: 80%; --d: 4s;"></div>
+      <div class="glimmer" style="top: 10%; left: 60%; --d: 6s;"></div>
+      <div class="glimmer" style="top: 85%; left: 75%; --d: 3.5s;"></div>
+      <div class="glimmer" style="top: 30%; left: 45%; --d: 4.5s;"></div>
+    </div>
+    <div class="partners-container">
+      <h2 class="partners-title">Đối tác của chúng tôi</h2>
+      <p class="partners-sub">Chúng tôi tự hào là đối tác chiến lược của các tổ chức, doanh nghiệp hàng đầu trong lĩnh vực Thực phẩm và Công nghệ, cùng nhau kiến tạo môi trường bếp ăn an toàn cho cộng đồng.</p>
+      
+      <div class="partners-slider">
+        <div class="partners-track">
+          <!-- First set -->
+          <div class="partners-logo">🛡️ SAFE-FOOD AI</div>
+          <div class="partners-logo">🥗 GLOBAL GREEN</div>
+          <div class="partners-logo">📊 TECH-VERIFY</div>
+          <div class="partners-logo">🏪 HYGIENE PLUS</div>
+          <div class="partners-logo">🏢 CITY-GOV</div>
+          <div class="partners-logo">🚀 FAST-DEPLOY</div>
+          <!-- Second set (clone for loop) -->
+          <div class="partners-logo">🛡️ SAFE-FOOD AI</div>
+          <div class="partners-logo">🥗 GLOBAL GREEN</div>
+          <div class="partners-logo">📊 TECH-VERIFY</div>
+          <div class="partners-logo">🏪 HYGIENE PLUS</div>
+          <div class="partners-logo">🏢 CITY-GOV</div>
+          <div class="partners-logo">🚀 FAST-DEPLOY</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer-wave-container">
+    <svg class="animated-waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+    viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+      <defs>
+        <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+      </defs>
+      <g class="parallax-waves">
+        <use xlink:href="#gentle-wave" x="48" y="0" />
+        <use xlink:href="#gentle-wave" x="48" y="3" />
+        <use xlink:href="#gentle-wave" x="48" y="5" />
+        <use xlink:href="#gentle-wave" x="48" y="7" />
+      </g>
+    </svg>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <div class="ft-brand">
+        <a href="/" class="logo">
+          <img src="/static/logo.png" alt="VietFood Guard">
+        </a>
+        <p class="ft-slogan" data-i18n="footer_slogan">Giải pháp đột phá ứng dụng Trí tuệ nhân tạo trong giám sát An toàn Vệ sinh Thực phẩm. Bảo vệ uy tín, nâng tầm thương hiệu.</p>
+        <div class="ft-badge-hs">
+          <span style="font-size:14px">🛡️</span> Cam Kết Vệ Sinh An Toàn Thực Phẩm
+        </div>
+      </div>
+
+      <div>
+        <h3 class="ft-col-title" data-i18n="ft_col1">Giải pháp AI</h3>
+        <ul class="ft-links">
+          <li data-i18n="li_text_104"><a onclick="switchPage('giaiphap')">Nhận diện vi phạm 24/7</a></li>
+          <li data-i18n="li_text_105"><a onclick="switchPage('giaiphap')">Cảnh báo Telegram tự động</a></li>
+          <li data-i18n="li_text_106"><a onclick="switchPage('giaiphap')">Dashboard giám sát đa luồng</a></li>
+          <li data-i18n="li_text_107"><a onclick="switchPage('giaiphap')">Trích xuất nhật ký vi phạm</a></li>
+          <li data-i18n="li_text_108"><a onclick="switchPage('phaply')">Tư vấn tuân thủ BYT</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="ft-col-title" data-i18n="ft_col2">Thông tin liên hệ</h3>
+        <ul class="ft-contact">
+          <li data-i18n="li_text_109"><span class="ico">📞</span> 0975.937.976</li>
+          <li data-i18n="li_text_110"><span class="ico">✉️</span> services.kimbaokbc@gmail.com</li>
+          <li data-i18n="li_text_111"><span class="ico">📍</span> 128/2 Đường Quang Trung, Phường 10, Gò Vấp, TP. Hồ Chí Minh, Việt Nam</li>
+        </ul>
+        <div class="ft-socials">
+          <a href="#" class="ft-social-btn">f</a>
+          <a href="#" class="ft-social-btn">in</a>
+          <a href="#" class="ft-social-btn">▶</a>
+        </div>
+        <div class="ft-visitor">
+          <span class="dot"></span> 2,359 Lượt truy cập
+        </div>
+      </div>
+
+      <div>
+        <div class="ft-map-mockup">
+          <span style="font-size: 24px; margin-bottom: 5px;">📍</span>
+          <span>Mở trong Google Maps ↗</span>
+        </div>
+        <div class="bct-badge">
+          <div class="bct-tick">✓</div>
+          ĐÃ THÔNG BÁO BỘ CÔNG THƯƠNG
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div>© 2026 VietFood Guard - Hợp tác phát triển cùng công ty Kim Bảo. Tất cả quyền được bảo lưu.</div>
+      <div class="ft-bottom-links">
+        <a onclick="switchPage('phaply')">Quy chuẩn ATTP</a>
+        <a href="#">Chính sách bảo mật</a>
+        <a href="#">Điều khoản sử dụng</a>
+        <a href="#">Hướng dẫn triển khai</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function updateClock() {
+      const now = new Date();
+      const clockEl = document.getElementById('clock');
+      if(clockEl) clockEl.textContent = now.toLocaleTimeString('vi-VN', {hour12: false});
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    const siteHeader = document.getElementById('site-header');
+    window.addEventListener('scroll', () => { siteHeader.classList.toggle('scrolled', window.scrollY > 20); });
+
+    function switchPage(pageId) {
+      document.querySelectorAll('.page-section').forEach(sec => { sec.classList.remove('active-page'); });
+      document.getElementById('page-' + pageId).classList.add('active-page');
+      document.querySelectorAll('.nav-links a').forEach(btn => { btn.classList.remove('active'); });
+      const activeBtn = document.querySelector(`.nav-links a[onclick*="${pageId}"]`);
+      if(activeBtn) activeBtn.classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.querySelectorAll('.reveal').forEach(el => { el.classList.remove('revealed'); });
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); } });
+    }, { threshold: 0.1 });
+    
+    setInterval(() => {
+        document.querySelectorAll('.reveal:not(.revealed)').forEach(el => {
+            if(el.offsetParent !== null) { observer.observe(el); }
+        });
+    }, 500);
+    </script>
+  <script>
+// 1. TỪ ĐIỂN NGÔN NGỮ (11 ngôn ngữ)
+const translations = {
+  "vi": {
+    "nav_home": "Trang chủ",
+    "nav_problem": "Vấn đề",
+    "nav_solution": "Giải pháp",
+    "nav_legal": "Pháp lý",
+    "nav_target": "Đối tượng",
+    "nav_login": "Truy cập hệ thống →",
+    "hero_badge": "Powered by YOLOv8 AI Real-time",
+    "hero_title": "Bảo vệ bếp ăn của bạn<br>bằng <span class=\"highlight\">Trí tuệ nhân tạo</span>",
+    "hero_sub": "Hệ thống giám sát vệ sinh an toàn thực phẩm 24/7 — tự động phát hiện vi phạm, gửi cảnh báo tức thì, tuân thủ 100% Luật ATTP 2010.",
+    "hero_cta_start": "🚀 Bắt đầu ngay",
+    "hero_cta_feat": "Xem tính năng",
+    "stat_live": "Giám sát liên tục",
+    "stat_time": "Phát hiện vi phạm",
+    "stat_types": "Loại vi phạm nhận diện",
+    "stat_law": "Tuân thủ Luật ATTP",
+    "cta_title": "Bắt đầu bảo vệ bếp ăn<br>của bạn <em>ngay hôm nay</em>",
+    "cta_desc": "Triển khai trong 10 phút. Không cần kỹ thuật viên. Chạy 24/7 hoàn toàn tự động.",
+    "cta_btn1": "🛡️ Truy cập Dashboard",
+    "cta_btn2": "Tìm hiểu thêm",
+    "ft_col1": "Giải pháp AI",
+    "ft_col2": "Thông liên hệ",
+    "footer_slogan": "Giải pháp đột phá ứng dụng Trí tuệ nhân tạo trong giám sát An toàn Vệ sinh Thực phẩm. Bảo vệ uy tín, nâng tầm thương hiệu.",
+    "sec_label_1": "Vấn đề thực tế",
+    "sec_label_2": "Giải pháp AI",
+    "sec_label_3": "Nền tảng pháp lý",
+    "sec_label_4": "Đối tượng sử dụng",
+    "sec_label_5": "The Invisible Risks",
+    "sec_label_6": "AI Implementation",
+    "sec_label_7": "Legal Foundation",
+    "sec_label_8": "Target Models",
+    "sec_title_9": "Vi phạm VSATTP không phải lúc nào cũng có người giám sát",
+    "sec_title_10": "Hệ thống giám sát toàn diện, tự động 24/7",
+    "sec_title_11": "Tuân thủ 100% văn bản pháp luật Việt Nam",
+    "sec_title_12": "Phù hợp với mọi cơ sở chế biến thực phẩm",
+    "sec_sub_13": "Một ca làm việc 8 tiếng — quản lý không thể có mặt 100%. Rủi ro xảy ra khi không ai để ý.",
+    "sec_sub_14": "VietFood Guard được xây dựng dựa trên các quy định pháp lý hiện hành, đảm bảo doanh nghiệp luôn đúng luật.",
+    "p_title_15": "Không đeo khẩu trang",
+    "p_title_16": "Đeo trang sức khi chế biến",
+    "p_title_17": "Dùng sai màu thớt",
+    "p_title_18": "Thiếu bảo hộ lao động",
+    "p_desc_19": "Vi phạm phổ biến nhất trong bếp ăn. Nguy cơ lây nhiễm vi khuẩn qua giọt bắn trực tiếp vào thực phẩm.",
+    "p_desc_20": "Nhẫn, vòng tay, đồng hồ là nguồn ô nhiễm vật lý hàng đầu theo QCVN 8-3:2012/BYT.",
+    "p_desc_21": "Dùng thớt thịt sống để cắt thực phẩm chín hoặc rau — nguyên nhân nhiễm chéo Salmonella, E.coli.",
+    "p_desc_22": "Không đội mũ, không găng tay khu sơ chế — vi phạm trực tiếp Điều 26 Luật ATTP 2010.",
+    "p_fine_23": "Phạt đến 3.000.000 VNĐ",
+    "p_fine_24": "Phạt đến 20.000.000 VNĐ",
+    "p_fine_25": "Ngộ độc tập thể: đến 150 triệu VNĐ",
+    "p_fine_26": "Phạt đến 20.000.000 VNĐ",
+    "feat_title_27": "Nhận diện vi phạm theo thời gian thực",
+    "feat_title_28": "Cảnh báo Telegram tức thì",
+    "feat_title_29": "Dashboard quản lý trực quan",
+    "feat_title_30": "Nhật ký vi phạm tự động",
+    "feat_title_31": "Tuân thủ đầy đủ pháp lý VN",
+    "feat_title_32": "Dễ triển khai, không cần IT",
+    "feat_desc_33": "Camera + AI YOLOv8 tự động phát hiện: không khẩu trang, không mũ bảo hộ, đeo trang sức, dùng sai thớt — trong chưa đến 2 giây.",
+    "feat_desc_34": "Khi phát hiện vi phạm, hệ thống tự động chụp ảnh bằng chứng và gửi thông báo ngay tới Telegram của quản lý — dù đang ở đâu.",
+    "feat_desc_35": "Xem trực tiếp tất cả camera, thống kê vi phạm theo ngày, nhật ký chi tiết từng ca — tất cả trên một màn hình duy nhất.",
+    "feat_desc_36": "Lưu trữ toàn bộ lịch sử vi phạm với thời gian, loại vi phạm, tên nhân viên, khu vực — phục vụ kiểm tra nội bộ và đoàn thanh tra.",
+    "feat_desc_37": "Hệ thống được xây dựng theo đúng Luật ATTP 2010, QCVN 8-3:2012/BYT, Nghị định 115/2018 và WHO Hand Hygiene 2019.",
+    "feat_desc_38": "Chạy trên máy tính Windows thông thường với webcam. Không cần server đắt tiền hay kỹ thuật viên chuyên biệt. Cài đặt trong 10 phút.",
+    "law_name_39": "Luật số 55/2010/QH12",
+    "law_name_40": "Nghị định 115/2018/NĐ-CP",
+    "law_name_41": "QCVN 8-3:2012/BYT",
+    "law_name_42": "Thông tư 30/2012/TT-BYT",
+    "law_name_43": "WHO Hand Hygiene 2019",
+    "law_name_44": "QCVN 8-1:2011/BYT",
+    "law_title_45": "Luật An Toàn Thực Phẩm 2010",
+    "law_title_46": "Xử phạt vi phạm VSATTP",
+    "law_title_47": "Giới hạn tác nhân vật lý",
+    "law_title_48": "Điều kiện ATTP bếp tập thể",
+    "law_title_49": "Kỹ thuật rửa tay 7 bước",
+    "law_title_50": "Giới hạn vi sinh vật",
+    "law_desc_51": "Điều 25–28 quy định điều kiện VSATTP nơi chế biến và cá nhân trực tiếp chế biến.",
+    "law_desc_52": "Mức phạt từ 500K đến 150 triệu đồng. Đình chỉ hoạt động 1–3 tháng.",
+    "law_desc_53": "Quy định tóc, móng tay, trang sức — người chế biến là nguồn nguy hiểm số 1.",
+    "law_desc_54": "Nguyên tắc bếp một chiều, lưu mẫu kiểm tra bắt buộc khi ngộ độc.",
+    "law_desc_55": "AI đếm thời gian và nhận biết từng động tác rửa tay chuẩn WHO.",
+    "law_desc_56": "Giới hạn Salmonella, E.coli, Staph aureus — cơ sở để xây dựng quy trình phát hiện.",
+    "uc_name_57": "Nhà hàng & Khách sạn",
+    "uc_name_58": "Quán ăn & Bếp tập thể",
+    "uc_name_59": "Nhà máy thực phẩm",
+    "uc_name_60": "Trường học & Canteen",
+    "uc_name_61": "Cơ sở sản xuất nhỏ",
+    "uc_desc_62": "Giám sát khu bếp, khu sơ chế và phục vụ liên tục.",
+    "uc_desc_63": "Đảm bảo tiêu chuẩn khi phục vụ số lượng lớn người ăn.",
+    "uc_desc_64": "Giám sát dây chuyền sản xuất, kho bảo quản theo ca.",
+    "uc_desc_65": "Bảo vệ học sinh — đối tượng dễ bị ngộ độc nhất.",
+    "uc_desc_66": "Giải pháp chi phí thấp, không cần đội IT riêng.",
+    "vande_h3_67": "Con người là nguồn ô nhiễm số 1",
+    "vande_h3_68": "Ma trận nhiễm chéo \"Âm thầm\"",
+    "vande_h3_69": "Hậu quả pháp lý & Tài chính",
+    "vande_p_70": "\n              Theo <strong>QCVN 8-3:2012/BYT</strong>, người trực tiếp chế biến là tác nhân vật lý và vi sinh hàng đầu[cite: 64, 397]. Các hành vi như không đeo khẩu trang hoặc tóc lộ ra ngoài mũ tạo điều kiện cho vi khuẩn lan truyền qua giọt bắn và bề mặt tiếp xúc[cite: 66, 390].\n            ",
+    "vande_p_71": "\n              Sử dụng thớt đỏ (thịt sống) để cắt rau hoặc thực phẩm chín là lỗi \"kinh điển\" gây nhiễm khuẩn <strong>Salmonella và E.coli</strong>[cite: 155, 209]. Việc rửa rau dưới 3 lần hoặc rửa qua loa không thể loại bỏ hết trứng ký sinh trùng theo quy chuẩn[cite: 128, 132].\n            ",
+    "vande_p_72": "\n              Không chỉ là nhắc nhở, vi phạm nghiêm trọng gây ngộ độc tập thể (≥5 người) có thể bị phạt tới <strong>150 triệu VNĐ</strong> và bị truy cứu trách nhiệm hình sự theo Điều 317 BLHS[cite: 57]. Việc đình chỉ hoạt động từ 1-3 tháng đồng nghĩa với việc phá sản dây chuyền.\n            ",
+    "gp_badge_73": "Lớp 01: Nhân sự",
+    "gp_h3_74": "Kiểm soát Trang phục (PPE)",
+    "gp_h3_75": "Vệ sinh tay chuẩn WHO",
+    "gp_h3_76": "Chống nhiễm chéo thớt",
+    "gp_h3_77": "Nhà hàng & Khách sạn",
+    "gp_h3_78": "Quán ăn & Bếp tập thể",
+    "gp_h3_79": "Nhà máy thực phẩm",
+    "gp_h3_80": "Trường học & Canteen",
+    "gp_h3_81": "Cơ sở sản xuất nhỏ",
+    "gp_p_82": "\n              Tự động nhận diện và cảnh báo nếu nhân viên vi phạm Điều 26 Luật ATTP 2010[cite: 390]:\n            ",
+    "gp_p_83": "\n              AI đếm thời gian và nhận diện chính xác 7 động tác rửa tay theo hướng dẫn WHO 2019[cite: 67, 68]:\n            ",
+    "gp_p_84": "\n              Sử dụng AI phân biệt hệ thống thớt 4 màu chuẩn để ngăn chặn vi khuẩn Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "\n                Tập trung vào tính chuyên nghiệp của nhân viên phục vụ và bếp mở. AI giám sát các hành vi cấm như dùng tay trần chia thức ăn hoặc nhúng muỗng nêm lại vào nồi[cite: 194, 307].\n            ",
+    "gp_p_86": "\n                Áp dụng nghiêm ngặt nguyên tắc bếp một chiều theo Điều 28 Luật ATTP[cite: 250]. AI tự động nhắc nhở quy trình <strong>lưu mẫu thực phẩm 100g/món</strong> bắt buộc trong 24-48h.\n            ",
+    "gp_p_87": "\n                Kiểm soát nhiệt độ bảo quản lạnh cho dây chuyền sản xuất lớn. AI cảnh báo khi thịt tươi để ở nhiệt độ phòng quá 2 giờ (Vùng nguy hiểm $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "\n                Bảo vệ đối tượng nhạy cảm nhất. Hệ thống AI tập trung vào kỹ thuật <strong>rửa tay 7 bước chuẩn WHO</strong> [cite: 67] và kiểm soát trang phục mũ/khẩu trang của nhân viên chế biến suất ăn[cite: 66].\n            ",
+    "gp_p_89": "\n                Giải pháp chi phí thấp, tận dụng Camera IP sẵn có để kiểm soát nguyên tắc **FIFO (Nhập trước - Xuất trước)** và dán nhãn hạn sử dụng cho sản phẩm[cite: 230, 233].\n            ",
+    "li_text_91": "❌ <strong style=\"color: var(--red);\">Ô nhiễm vật lý:</strong> Đeo trang sức, đồng hồ khi chế biến[cite: 66, 390].",
+    "li_text_92": "❌ <strong style=\"color: var(--red);\">Hành vi thiếu vệ sinh:</strong> Ăn uống, nhai kẹo cao su trong bếp[cite: 311, 313].",
+    "li_text_93": "❌ <strong style=\"color: var(--red);\">Sai quy chuẩn:</strong> Hút thuốc trong khu vực bếp/phục vụ[cite: 309].",
+    "li_text_94": "❌ <strong style=\"color: var(--red);\">Mất vệ sinh chéo:</strong> Nhúng lại muỗng nêm đã dùng vào nồi[cite: 321].",
+    "li_text_95": "❌ <strong style=\"color: var(--red);\">Cẩu thả:</strong> Để đồ ăn trực tiếp trên sàn nhà (dù ngắn hạn)[cite: 317].",
+    "li_text_96": "❌ <strong style=\"color: var(--red);\">Chạm bẩn:</strong> Sờ tay lên mặt, tóc khi đang mang món[cite: 315].",
+    "li_text_97": "❌ <strong style=\"color: var(--red);\">Thu dọn bẩn:</strong> Dùng tay xáo trực tiếp vào bát đĩa dơ[cite: 323].",
+    "li_text_98": "✅ Phát hiện tóc lộ ra ngoài mũ bảo hộ",
+    "li_text_99": "✅ Kiểm tra đeo khẩu trang kín mũi & miệng",
+    "li_text_100": "✅ Cảnh báo thiếu găng tay tại khu sơ chế",
+    "li_text_101": "⏱️ Đếm ngược tối thiểu 20 giây mỗi lần rửa",
+    "li_text_102": "📷 Nhận diện đủ 7 bước (mu, kẽ, móng, cái...)",
+    "li_text_103": "⚠️ Cảnh báo ngay nếu nhân viên rửa qua loa",
+    "li_text_104": "<a onclick=\"switchPage('giaiphap')\">Nhận diện vi phạm 24/7</a>",
+    "li_text_105": "<a onclick=\"switchPage('giaiphap')\">Cảnh báo Telegram tự động</a>",
+    "li_text_106": "<a onclick=\"switchPage('giaiphap')\">Dashboard giám sát đa luồng</a>",
+    "li_text_107": "<a onclick=\"switchPage('giaiphap')\">Trích xuất nhật ký vi phạm</a>",
+    "li_text_108": "<a onclick=\"switchPage('phaply')\">Tư vấn tuân thủ BYT</a>",
+    "li_text_109": "<span class=\"ico\">📞</span> 0975.937.976",
+    "li_text_110": "<span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "<span class=\"ico\">📍</span> 128/2 Đường Quang Trung, Phường 10, Gò Vấp, TP. Hồ Chí Minh, Việt Nam"
+  },
+  "en": {
+    "sec_label_1": "The Real Problem",
+    "sec_label_2": "AI Solutions",
+    "sec_label_3": "Legal Foundation",
+    "sec_label_4": "Target Audience",
+    "sec_label_5": "The Invisible Risks",
+    "sec_label_6": "AI Implementation",
+    "sec_label_7": "Legal Foundation",
+    "sec_label_8": "Target Models",
+    "sec_title_9": "Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "Suitable for All Food Processing Facilities",
+    "sec_sub_13": "An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "Not Wearing Masks",
+    "p_title_16": "Wearing Jewelry While Processing",
+    "p_title_17": "Using Wrong Cutting Board Colors",
+    "p_title_18": "Lack of Protective Gear",
+    "p_desc_19": "The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "Fines up to 3,000,000 VND",
+    "p_fine_24": "Fines up to 20,000,000 VND",
+    "p_fine_25": "Mass poisoning: up to 150 million VND",
+    "p_fine_26": "Fines up to 20,000,000 VND",
+    "feat_title_27": "Real-time Violation Detection",
+    "feat_title_28": "Instant Telegram Alerts",
+    "feat_title_29": "Intuitive Management Dashboard",
+    "feat_title_30": "Automated Violation Logs",
+    "feat_title_31": "Full Vietnamese Legal Compliance",
+    "feat_title_32": "Easy to Deploy, No IT Needed",
+    "feat_desc_33": "Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "Law No. 55/2010/QH12",
+    "law_name_40": "Decree 115/2018/ND-CP",
+    "law_name_41": "QCVN 8-3:2012/BYT",
+    "law_name_42": "Circular 30/2012/TT-BYT",
+    "law_name_43": "WHO Hand Hygiene 2019",
+    "law_name_44": "QCVN 8-1:2011/BYT",
+    "law_title_45": "2010 Food Safety Law",
+    "law_title_46": "Food Safety Violation Penalties",
+    "law_title_47": "Physical Agent Limits",
+    "law_title_48": "Collective Kitchen Food Safety Conditions",
+    "law_title_49": "7-Step Hand Washing Technique",
+    "law_title_50": "Microbiological Limits",
+    "law_desc_51": "Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "Restaurants & Hotels",
+    "uc_name_58": "Eateries & Collective Kitchens",
+    "uc_name_59": "Food Factories",
+    "uc_name_60": "Schools & Canteens",
+    "uc_name_61": "Small Production Facilities",
+    "uc_desc_62": "Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "Humans are the #1 source of contamination",
+    "vande_h3_68": "The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "Legal & Financial Consequences",
+    "vande_p_70": "\n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "\n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "\n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "Layer 01: Personnel",
+    "gp_h3_74": "PPE Control",
+    "gp_h3_75": "WHO Standard Hand Hygiene",
+    "gp_h3_76": "Anti Cross-Contamination",
+    "gp_h3_77": "Restaurants & Hotels",
+    "gp_h3_78": "Eateries & Collective Kitchens",
+    "gp_h3_79": "Food Factories",
+    "gp_h3_80": "Schools & Canteens",
+    "gp_h3_81": "Small Production Facilities",
+    "gp_p_82": "\n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "\n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "\n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "\n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "\n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "\n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "\n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "\n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "✅ Detects hair exposed outside protective hats",
+    "li_text_99": "✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "<a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "<a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "<a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "<a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "<a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "<span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "<span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "<span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "fr": {
+    "sec_label_1": "[FR] The Real Problem",
+    "sec_label_2": "[FR] AI Solutions",
+    "sec_label_3": "[FR] Legal Foundation",
+    "sec_label_4": "[FR] Target Audience",
+    "sec_label_5": "[FR] The Invisible Risks",
+    "sec_label_6": "[FR] AI Implementation",
+    "sec_label_7": "[FR] Legal Foundation",
+    "sec_label_8": "[FR] Target Models",
+    "sec_title_9": "[FR] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[FR] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[FR] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[FR] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[FR] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[FR] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[FR] Not Wearing Masks",
+    "p_title_16": "[FR] Wearing Jewelry While Processing",
+    "p_title_17": "[FR] Using Wrong Cutting Board Colors",
+    "p_title_18": "[FR] Lack of Protective Gear",
+    "p_desc_19": "[FR] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[FR] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[FR] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[FR] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[FR] Fines up to 3,000,000 VND",
+    "p_fine_24": "[FR] Fines up to 20,000,000 VND",
+    "p_fine_25": "[FR] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[FR] Fines up to 20,000,000 VND",
+    "feat_title_27": "[FR] Real-time Violation Detection",
+    "feat_title_28": "[FR] Instant Telegram Alerts",
+    "feat_title_29": "[FR] Intuitive Management Dashboard",
+    "feat_title_30": "[FR] Automated Violation Logs",
+    "feat_title_31": "[FR] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[FR] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[FR] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[FR] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[FR] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[FR] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[FR] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[FR] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[FR] Law No. 55/2010/QH12",
+    "law_name_40": "[FR] Decree 115/2018/ND-CP",
+    "law_name_41": "[FR] QCVN 8-3:2012/BYT",
+    "law_name_42": "[FR] Circular 30/2012/TT-BYT",
+    "law_name_43": "[FR] WHO Hand Hygiene 2019",
+    "law_name_44": "[FR] QCVN 8-1:2011/BYT",
+    "law_title_45": "[FR] 2010 Food Safety Law",
+    "law_title_46": "[FR] Food Safety Violation Penalties",
+    "law_title_47": "[FR] Physical Agent Limits",
+    "law_title_48": "[FR] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[FR] 7-Step Hand Washing Technique",
+    "law_title_50": "[FR] Microbiological Limits",
+    "law_desc_51": "[FR] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[FR] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[FR] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[FR] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[FR] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[FR] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[FR] Restaurants & Hotels",
+    "uc_name_58": "[FR] Eateries & Collective Kitchens",
+    "uc_name_59": "[FR] Food Factories",
+    "uc_name_60": "[FR] Schools & Canteens",
+    "uc_name_61": "[FR] Small Production Facilities",
+    "uc_desc_62": "[FR] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[FR] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[FR] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[FR] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[FR] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[FR] Humans are the #1 source of contamination",
+    "vande_h3_68": "[FR] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[FR] Legal & Financial Consequences",
+    "vande_p_70": "[FR] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[FR] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[FR] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[FR] Layer 01: Personnel",
+    "gp_h3_74": "[FR] PPE Control",
+    "gp_h3_75": "[FR] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[FR] Anti Cross-Contamination",
+    "gp_h3_77": "[FR] Restaurants & Hotels",
+    "gp_h3_78": "[FR] Eateries & Collective Kitchens",
+    "gp_h3_79": "[FR] Food Factories",
+    "gp_h3_80": "[FR] Schools & Canteens",
+    "gp_h3_81": "[FR] Small Production Facilities",
+    "gp_p_82": "[FR] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[FR] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[FR] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[FR] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[FR] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[FR] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[FR] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[FR] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[FR] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[FR] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[FR] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[FR] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[FR] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[FR] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[FR] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[FR] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[FR] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[FR] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[FR] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[FR] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[FR] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[FR] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[FR] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[FR] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[FR] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[FR] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[FR] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[FR] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[FR] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "zh": {
+    "nav_home": "首页",
+    "nav_problem": "问题",
+    "nav_solution": "解决方案",
+    "nav_legal": "法律法规",
+    "nav_target": "适用对象",
+    "nav_login": "访问系统 →",
+    "hero_badge": "由 YOLOv8 AI 实时驱动",
+    "hero_title": "利用<span class=\"highlight\">人工智能</span><br>保护您的厨房",
+    "hero_sub": "24/7 食品安全监控系统 — 自动发现违规行为，发送即时警报，100% 符合食品安全法。",
+    "hero_cta_start": "🚀 立即开始",
+    "hero_cta_feat": "查看功能",
+    "stat_live": "持续监控",
+    "stat_time": "违规检测",
+    "stat_types": "违规识别类型",
+    "stat_law": "符合法律规定",
+    "cta_title": "<em>今天</em><br>就开始保护您的厨房",
+    "cta_desc": "10分钟内部署。无需技术人员。24/7 全自动运行。",
+    "cta_btn1": "🛡️ 访问控制台",
+    "cta_btn2": "了解更多",
+    "ft_col1": "AI 解决方案",
+    "ft_col2": "联系信息",
+    "footer_slogan": "应用人工智能进行食品安全监控的突破性解决方案。保护声誉，提升品牌.",
+    "sec_label_1": "[ZH] The Real Problem",
+    "sec_label_2": "[ZH] AI Solutions",
+    "sec_label_3": "[ZH] Legal Foundation",
+    "sec_label_4": "[ZH] Target Audience",
+    "sec_label_5": "[ZH] The Invisible Risks",
+    "sec_label_6": "[ZH] AI Implementation",
+    "sec_label_7": "[ZH] Legal Foundation",
+    "sec_label_8": "[ZH] Target Models",
+    "sec_title_9": "[ZH] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[ZH] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[ZH] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[ZH] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[ZH] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[ZH] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[ZH] Not Wearing Masks",
+    "p_title_16": "[ZH] Wearing Jewelry While Processing",
+    "p_title_17": "[ZH] Using Wrong Cutting Board Colors",
+    "p_title_18": "[ZH] Lack of Protective Gear",
+    "p_desc_19": "[ZH] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[ZH] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[ZH] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[ZH] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[ZH] Fines up to 3,000,000 VND",
+    "p_fine_24": "[ZH] Fines up to 20,000,000 VND",
+    "p_fine_25": "[ZH] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[ZH] Fines up to 20,000,000 VND",
+    "feat_title_27": "[ZH] Real-time Violation Detection",
+    "feat_title_28": "[ZH] Instant Telegram Alerts",
+    "feat_title_29": "[ZH] Intuitive Management Dashboard",
+    "feat_title_30": "[ZH] Automated Violation Logs",
+    "feat_title_31": "[ZH] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[ZH] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[ZH] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[ZH] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[ZH] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[ZH] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[ZH] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[ZH] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[ZH] Law No. 55/2010/QH12",
+    "law_name_40": "[ZH] Decree 115/2018/ND-CP",
+    "law_name_41": "[ZH] QCVN 8-3:2012/BYT",
+    "law_name_42": "[ZH] Circular 30/2012/TT-BYT",
+    "law_name_43": "[ZH] WHO Hand Hygiene 2019",
+    "law_name_44": "[ZH] QCVN 8-1:2011/BYT",
+    "law_title_45": "[ZH] 2010 Food Safety Law",
+    "law_title_46": "[ZH] Food Safety Violation Penalties",
+    "law_title_47": "[ZH] Physical Agent Limits",
+    "law_title_48": "[ZH] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[ZH] 7-Step Hand Washing Technique",
+    "law_title_50": "[ZH] Microbiological Limits",
+    "law_desc_51": "[ZH] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[ZH] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[ZH] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[ZH] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[ZH] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[ZH] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[ZH] Restaurants & Hotels",
+    "uc_name_58": "[ZH] Eateries & Collective Kitchens",
+    "uc_name_59": "[ZH] Food Factories",
+    "uc_name_60": "[ZH] Schools & Canteens",
+    "uc_name_61": "[ZH] Small Production Facilities",
+    "uc_desc_62": "[ZH] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[ZH] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[ZH] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[ZH] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[ZH] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[ZH] Humans are the #1 source of contamination",
+    "vande_h3_68": "[ZH] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[ZH] Legal & Financial Consequences",
+    "vande_p_70": "[ZH] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[ZH] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[ZH] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[ZH] Layer 01: Personnel",
+    "gp_h3_74": "[ZH] PPE Control",
+    "gp_h3_75": "[ZH] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[ZH] Anti Cross-Contamination",
+    "gp_h3_77": "[ZH] Restaurants & Hotels",
+    "gp_h3_78": "[ZH] Eateries & Collective Kitchens",
+    "gp_h3_79": "[ZH] Food Factories",
+    "gp_h3_80": "[ZH] Schools & Canteens",
+    "gp_h3_81": "[ZH] Small Production Facilities",
+    "gp_p_82": "[ZH] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[ZH] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[ZH] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[ZH] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[ZH] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[ZH] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[ZH] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[ZH] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[ZH] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[ZH] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[ZH] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[ZH] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[ZH] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[ZH] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[ZH] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[ZH] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[ZH] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[ZH] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[ZH] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[ZH] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[ZH] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[ZH] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[ZH] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[ZH] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[ZH] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[ZH] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[ZH] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[ZH] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[ZH] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "ko": {
+    "sec_label_1": "[KO] The Real Problem",
+    "sec_label_2": "[KO] AI Solutions",
+    "sec_label_3": "[KO] Legal Foundation",
+    "sec_label_4": "[KO] Target Audience",
+    "sec_label_5": "[KO] The Invisible Risks",
+    "sec_label_6": "[KO] AI Implementation",
+    "sec_label_7": "[KO] Legal Foundation",
+    "sec_label_8": "[KO] Target Models",
+    "sec_title_9": "[KO] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[KO] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[KO] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[KO] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[KO] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[KO] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[KO] Not Wearing Masks",
+    "p_title_16": "[KO] Wearing Jewelry While Processing",
+    "p_title_17": "[KO] Using Wrong Cutting Board Colors",
+    "p_title_18": "[KO] Lack of Protective Gear",
+    "p_desc_19": "[KO] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[KO] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[KO] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[KO] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[KO] Fines up to 3,000,000 VND",
+    "p_fine_24": "[KO] Fines up to 20,000,000 VND",
+    "p_fine_25": "[KO] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[KO] Fines up to 20,000,000 VND",
+    "feat_title_27": "[KO] Real-time Violation Detection",
+    "feat_title_28": "[KO] Instant Telegram Alerts",
+    "feat_title_29": "[KO] Intuitive Management Dashboard",
+    "feat_title_30": "[KO] Automated Violation Logs",
+    "feat_title_31": "[KO] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[KO] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[KO] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[KO] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[KO] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[KO] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[KO] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[KO] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[KO] Law No. 55/2010/QH12",
+    "law_name_40": "[KO] Decree 115/2018/ND-CP",
+    "law_name_41": "[KO] QCVN 8-3:2012/BYT",
+    "law_name_42": "[KO] Circular 30/2012/TT-BYT",
+    "law_name_43": "[KO] WHO Hand Hygiene 2019",
+    "law_name_44": "[KO] QCVN 8-1:2011/BYT",
+    "law_title_45": "[KO] 2010 Food Safety Law",
+    "law_title_46": "[KO] Food Safety Violation Penalties",
+    "law_title_47": "[KO] Physical Agent Limits",
+    "law_title_48": "[KO] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[KO] 7-Step Hand Washing Technique",
+    "law_title_50": "[KO] Microbiological Limits",
+    "law_desc_51": "[KO] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[KO] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[KO] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[KO] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[KO] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[KO] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[KO] Restaurants & Hotels",
+    "uc_name_58": "[KO] Eateries & Collective Kitchens",
+    "uc_name_59": "[KO] Food Factories",
+    "uc_name_60": "[KO] Schools & Canteens",
+    "uc_name_61": "[KO] Small Production Facilities",
+    "uc_desc_62": "[KO] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[KO] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[KO] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[KO] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[KO] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[KO] Humans are the #1 source of contamination",
+    "vande_h3_68": "[KO] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[KO] Legal & Financial Consequences",
+    "vande_p_70": "[KO] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[KO] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[KO] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[KO] Layer 01: Personnel",
+    "gp_h3_74": "[KO] PPE Control",
+    "gp_h3_75": "[KO] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[KO] Anti Cross-Contamination",
+    "gp_h3_77": "[KO] Restaurants & Hotels",
+    "gp_h3_78": "[KO] Eateries & Collective Kitchens",
+    "gp_h3_79": "[KO] Food Factories",
+    "gp_h3_80": "[KO] Schools & Canteens",
+    "gp_h3_81": "[KO] Small Production Facilities",
+    "gp_p_82": "[KO] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[KO] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[KO] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[KO] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[KO] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[KO] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[KO] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[KO] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[KO] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[KO] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[KO] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[KO] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[KO] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[KO] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[KO] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[KO] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[KO] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[KO] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[KO] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[KO] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[KO] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[KO] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[KO] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[KO] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[KO] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[KO] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[KO] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[KO] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[KO] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "ja": {
+    "sec_label_1": "[JA] The Real Problem",
+    "sec_label_2": "[JA] AI Solutions",
+    "sec_label_3": "[JA] Legal Foundation",
+    "sec_label_4": "[JA] Target Audience",
+    "sec_label_5": "[JA] The Invisible Risks",
+    "sec_label_6": "[JA] AI Implementation",
+    "sec_label_7": "[JA] Legal Foundation",
+    "sec_label_8": "[JA] Target Models",
+    "sec_title_9": "[JA] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[JA] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[JA] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[JA] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[JA] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[JA] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[JA] Not Wearing Masks",
+    "p_title_16": "[JA] Wearing Jewelry While Processing",
+    "p_title_17": "[JA] Using Wrong Cutting Board Colors",
+    "p_title_18": "[JA] Lack of Protective Gear",
+    "p_desc_19": "[JA] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[JA] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[JA] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[JA] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[JA] Fines up to 3,000,000 VND",
+    "p_fine_24": "[JA] Fines up to 20,000,000 VND",
+    "p_fine_25": "[JA] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[JA] Fines up to 20,000,000 VND",
+    "feat_title_27": "[JA] Real-time Violation Detection",
+    "feat_title_28": "[JA] Instant Telegram Alerts",
+    "feat_title_29": "[JA] Intuitive Management Dashboard",
+    "feat_title_30": "[JA] Automated Violation Logs",
+    "feat_title_31": "[JA] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[JA] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[JA] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[JA] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[JA] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[JA] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[JA] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[JA] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[JA] Law No. 55/2010/QH12",
+    "law_name_40": "[JA] Decree 115/2018/ND-CP",
+    "law_name_41": "[JA] QCVN 8-3:2012/BYT",
+    "law_name_42": "[JA] Circular 30/2012/TT-BYT",
+    "law_name_43": "[JA] WHO Hand Hygiene 2019",
+    "law_name_44": "[JA] QCVN 8-1:2011/BYT",
+    "law_title_45": "[JA] 2010 Food Safety Law",
+    "law_title_46": "[JA] Food Safety Violation Penalties",
+    "law_title_47": "[JA] Physical Agent Limits",
+    "law_title_48": "[JA] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[JA] 7-Step Hand Washing Technique",
+    "law_title_50": "[JA] Microbiological Limits",
+    "law_desc_51": "[JA] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[JA] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[JA] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[JA] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[JA] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[JA] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[JA] Restaurants & Hotels",
+    "uc_name_58": "[JA] Eateries & Collective Kitchens",
+    "uc_name_59": "[JA] Food Factories",
+    "uc_name_60": "[JA] Schools & Canteens",
+    "uc_name_61": "[JA] Small Production Facilities",
+    "uc_desc_62": "[JA] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[JA] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[JA] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[JA] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[JA] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[JA] Humans are the #1 source of contamination",
+    "vande_h3_68": "[JA] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[JA] Legal & Financial Consequences",
+    "vande_p_70": "[JA] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[JA] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[JA] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[JA] Layer 01: Personnel",
+    "gp_h3_74": "[JA] PPE Control",
+    "gp_h3_75": "[JA] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[JA] Anti Cross-Contamination",
+    "gp_h3_77": "[JA] Restaurants & Hotels",
+    "gp_h3_78": "[JA] Eateries & Collective Kitchens",
+    "gp_h3_79": "[JA] Food Factories",
+    "gp_h3_80": "[JA] Schools & Canteens",
+    "gp_h3_81": "[JA] Small Production Facilities",
+    "gp_p_82": "[JA] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[JA] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[JA] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[JA] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[JA] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[JA] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[JA] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[JA] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[JA] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[JA] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[JA] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[JA] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[JA] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[JA] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[JA] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[JA] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[JA] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[JA] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[JA] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[JA] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[JA] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[JA] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[JA] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[JA] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[JA] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[JA] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[JA] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[JA] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[JA] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "ru": {
+    "sec_label_1": "[RU] The Real Problem",
+    "sec_label_2": "[RU] AI Solutions",
+    "sec_label_3": "[RU] Legal Foundation",
+    "sec_label_4": "[RU] Target Audience",
+    "sec_label_5": "[RU] The Invisible Risks",
+    "sec_label_6": "[RU] AI Implementation",
+    "sec_label_7": "[RU] Legal Foundation",
+    "sec_label_8": "[RU] Target Models",
+    "sec_title_9": "[RU] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[RU] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[RU] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[RU] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[RU] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[RU] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[RU] Not Wearing Masks",
+    "p_title_16": "[RU] Wearing Jewelry While Processing",
+    "p_title_17": "[RU] Using Wrong Cutting Board Colors",
+    "p_title_18": "[RU] Lack of Protective Gear",
+    "p_desc_19": "[RU] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[RU] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[RU] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[RU] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[RU] Fines up to 3,000,000 VND",
+    "p_fine_24": "[RU] Fines up to 20,000,000 VND",
+    "p_fine_25": "[RU] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[RU] Fines up to 20,000,000 VND",
+    "feat_title_27": "[RU] Real-time Violation Detection",
+    "feat_title_28": "[RU] Instant Telegram Alerts",
+    "feat_title_29": "[RU] Intuitive Management Dashboard",
+    "feat_title_30": "[RU] Automated Violation Logs",
+    "feat_title_31": "[RU] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[RU] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[RU] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[RU] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[RU] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[RU] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[RU] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[RU] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[RU] Law No. 55/2010/QH12",
+    "law_name_40": "[RU] Decree 115/2018/ND-CP",
+    "law_name_41": "[RU] QCVN 8-3:2012/BYT",
+    "law_name_42": "[RU] Circular 30/2012/TT-BYT",
+    "law_name_43": "[RU] WHO Hand Hygiene 2019",
+    "law_name_44": "[RU] QCVN 8-1:2011/BYT",
+    "law_title_45": "[RU] 2010 Food Safety Law",
+    "law_title_46": "[RU] Food Safety Violation Penalties",
+    "law_title_47": "[RU] Physical Agent Limits",
+    "law_title_48": "[RU] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[RU] 7-Step Hand Washing Technique",
+    "law_title_50": "[RU] Microbiological Limits",
+    "law_desc_51": "[RU] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[RU] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[RU] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[RU] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[RU] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[RU] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[RU] Restaurants & Hotels",
+    "uc_name_58": "[RU] Eateries & Collective Kitchens",
+    "uc_name_59": "[RU] Food Factories",
+    "uc_name_60": "[RU] Schools & Canteens",
+    "uc_name_61": "[RU] Small Production Facilities",
+    "uc_desc_62": "[RU] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[RU] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[RU] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[RU] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[RU] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[RU] Humans are the #1 source of contamination",
+    "vande_h3_68": "[RU] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[RU] Legal & Financial Consequences",
+    "vande_p_70": "[RU] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[RU] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[RU] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[RU] Layer 01: Personnel",
+    "gp_h3_74": "[RU] PPE Control",
+    "gp_h3_75": "[RU] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[RU] Anti Cross-Contamination",
+    "gp_h3_77": "[RU] Restaurants & Hotels",
+    "gp_h3_78": "[RU] Eateries & Collective Kitchens",
+    "gp_h3_79": "[RU] Food Factories",
+    "gp_h3_80": "[RU] Schools & Canteens",
+    "gp_h3_81": "[RU] Small Production Facilities",
+    "gp_p_82": "[RU] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[RU] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[RU] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[RU] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[RU] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[RU] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[RU] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[RU] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[RU] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[RU] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[RU] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[RU] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[RU] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[RU] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[RU] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[RU] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[RU] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[RU] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[RU] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[RU] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[RU] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[RU] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[RU] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[RU] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[RU] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[RU] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[RU] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[RU] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[RU] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "es": {
+    "sec_label_1": "[ES] The Real Problem",
+    "sec_label_2": "[ES] AI Solutions",
+    "sec_label_3": "[ES] Legal Foundation",
+    "sec_label_4": "[ES] Target Audience",
+    "sec_label_5": "[ES] The Invisible Risks",
+    "sec_label_6": "[ES] AI Implementation",
+    "sec_label_7": "[ES] Legal Foundation",
+    "sec_label_8": "[ES] Target Models",
+    "sec_title_9": "[ES] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[ES] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[ES] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[ES] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[ES] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[ES] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[ES] Not Wearing Masks",
+    "p_title_16": "[ES] Wearing Jewelry While Processing",
+    "p_title_17": "[ES] Using Wrong Cutting Board Colors",
+    "p_title_18": "[ES] Lack of Protective Gear",
+    "p_desc_19": "[ES] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[ES] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[ES] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[ES] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[ES] Fines up to 3,000,000 VND",
+    "p_fine_24": "[ES] Fines up to 20,000,000 VND",
+    "p_fine_25": "[ES] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[ES] Fines up to 20,000,000 VND",
+    "feat_title_27": "[ES] Real-time Violation Detection",
+    "feat_title_28": "[ES] Instant Telegram Alerts",
+    "feat_title_29": "[ES] Intuitive Management Dashboard",
+    "feat_title_30": "[ES] Automated Violation Logs",
+    "feat_title_31": "[ES] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[ES] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[ES] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[ES] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[ES] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[ES] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[ES] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[ES] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[ES] Law No. 55/2010/QH12",
+    "law_name_40": "[ES] Decree 115/2018/ND-CP",
+    "law_name_41": "[ES] QCVN 8-3:2012/BYT",
+    "law_name_42": "[ES] Circular 30/2012/TT-BYT",
+    "law_name_43": "[ES] WHO Hand Hygiene 2019",
+    "law_name_44": "[ES] QCVN 8-1:2011/BYT",
+    "law_title_45": "[ES] 2010 Food Safety Law",
+    "law_title_46": "[ES] Food Safety Violation Penalties",
+    "law_title_47": "[ES] Physical Agent Limits",
+    "law_title_48": "[ES] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[ES] 7-Step Hand Washing Technique",
+    "law_title_50": "[ES] Microbiological Limits",
+    "law_desc_51": "[ES] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[ES] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[ES] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[ES] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[ES] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[ES] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[ES] Restaurants & Hotels",
+    "uc_name_58": "[ES] Eateries & Collective Kitchens",
+    "uc_name_59": "[ES] Food Factories",
+    "uc_name_60": "[ES] Schools & Canteens",
+    "uc_name_61": "[ES] Small Production Facilities",
+    "uc_desc_62": "[ES] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[ES] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[ES] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[ES] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[ES] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[ES] Humans are the #1 source of contamination",
+    "vande_h3_68": "[ES] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[ES] Legal & Financial Consequences",
+    "vande_p_70": "[ES] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[ES] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[ES] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[ES] Layer 01: Personnel",
+    "gp_h3_74": "[ES] PPE Control",
+    "gp_h3_75": "[ES] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[ES] Anti Cross-Contamination",
+    "gp_h3_77": "[ES] Restaurants & Hotels",
+    "gp_h3_78": "[ES] Eateries & Collective Kitchens",
+    "gp_h3_79": "[ES] Food Factories",
+    "gp_h3_80": "[ES] Schools & Canteens",
+    "gp_h3_81": "[ES] Small Production Facilities",
+    "gp_p_82": "[ES] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[ES] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[ES] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[ES] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[ES] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[ES] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[ES] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[ES] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[ES] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[ES] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[ES] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[ES] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[ES] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[ES] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[ES] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[ES] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[ES] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[ES] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[ES] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[ES] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[ES] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[ES] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[ES] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[ES] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[ES] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[ES] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[ES] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[ES] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[ES] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "de": {
+    "sec_label_1": "[DE] The Real Problem",
+    "sec_label_2": "[DE] AI Solutions",
+    "sec_label_3": "[DE] Legal Foundation",
+    "sec_label_4": "[DE] Target Audience",
+    "sec_label_5": "[DE] The Invisible Risks",
+    "sec_label_6": "[DE] AI Implementation",
+    "sec_label_7": "[DE] Legal Foundation",
+    "sec_label_8": "[DE] Target Models",
+    "sec_title_9": "[DE] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[DE] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[DE] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[DE] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[DE] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[DE] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[DE] Not Wearing Masks",
+    "p_title_16": "[DE] Wearing Jewelry While Processing",
+    "p_title_17": "[DE] Using Wrong Cutting Board Colors",
+    "p_title_18": "[DE] Lack of Protective Gear",
+    "p_desc_19": "[DE] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[DE] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[DE] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[DE] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[DE] Fines up to 3,000,000 VND",
+    "p_fine_24": "[DE] Fines up to 20,000,000 VND",
+    "p_fine_25": "[DE] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[DE] Fines up to 20,000,000 VND",
+    "feat_title_27": "[DE] Real-time Violation Detection",
+    "feat_title_28": "[DE] Instant Telegram Alerts",
+    "feat_title_29": "[DE] Intuitive Management Dashboard",
+    "feat_title_30": "[DE] Automated Violation Logs",
+    "feat_title_31": "[DE] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[DE] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[DE] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[DE] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[DE] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[DE] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[DE] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[DE] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[DE] Law No. 55/2010/QH12",
+    "law_name_40": "[DE] Decree 115/2018/ND-CP",
+    "law_name_41": "[DE] QCVN 8-3:2012/BYT",
+    "law_name_42": "[DE] Circular 30/2012/TT-BYT",
+    "law_name_43": "[DE] WHO Hand Hygiene 2019",
+    "law_name_44": "[DE] QCVN 8-1:2011/BYT",
+    "law_title_45": "[DE] 2010 Food Safety Law",
+    "law_title_46": "[DE] Food Safety Violation Penalties",
+    "law_title_47": "[DE] Physical Agent Limits",
+    "law_title_48": "[DE] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[DE] 7-Step Hand Washing Technique",
+    "law_title_50": "[DE] Microbiological Limits",
+    "law_desc_51": "[DE] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[DE] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[DE] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[DE] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[DE] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[DE] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[DE] Restaurants & Hotels",
+    "uc_name_58": "[DE] Eateries & Collective Kitchens",
+    "uc_name_59": "[DE] Food Factories",
+    "uc_name_60": "[DE] Schools & Canteens",
+    "uc_name_61": "[DE] Small Production Facilities",
+    "uc_desc_62": "[DE] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[DE] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[DE] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[DE] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[DE] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[DE] Humans are the #1 source of contamination",
+    "vande_h3_68": "[DE] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[DE] Legal & Financial Consequences",
+    "vande_p_70": "[DE] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[DE] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[DE] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[DE] Layer 01: Personnel",
+    "gp_h3_74": "[DE] PPE Control",
+    "gp_h3_75": "[DE] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[DE] Anti Cross-Contamination",
+    "gp_h3_77": "[DE] Restaurants & Hotels",
+    "gp_h3_78": "[DE] Eateries & Collective Kitchens",
+    "gp_h3_79": "[DE] Food Factories",
+    "gp_h3_80": "[DE] Schools & Canteens",
+    "gp_h3_81": "[DE] Small Production Facilities",
+    "gp_p_82": "[DE] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[DE] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[DE] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[DE] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[DE] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[DE] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[DE] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[DE] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[DE] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[DE] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[DE] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[DE] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[DE] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[DE] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[DE] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[DE] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[DE] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[DE] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[DE] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[DE] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[DE] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[DE] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[DE] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[DE] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[DE] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[DE] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[DE] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[DE] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[DE] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "it": {
+    "sec_label_1": "[IT] The Real Problem",
+    "sec_label_2": "[IT] AI Solutions",
+    "sec_label_3": "[IT] Legal Foundation",
+    "sec_label_4": "[IT] Target Audience",
+    "sec_label_5": "[IT] The Invisible Risks",
+    "sec_label_6": "[IT] AI Implementation",
+    "sec_label_7": "[IT] Legal Foundation",
+    "sec_label_8": "[IT] Target Models",
+    "sec_title_9": "[IT] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[IT] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[IT] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[IT] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[IT] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[IT] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[IT] Not Wearing Masks",
+    "p_title_16": "[IT] Wearing Jewelry While Processing",
+    "p_title_17": "[IT] Using Wrong Cutting Board Colors",
+    "p_title_18": "[IT] Lack of Protective Gear",
+    "p_desc_19": "[IT] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[IT] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[IT] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[IT] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[IT] Fines up to 3,000,000 VND",
+    "p_fine_24": "[IT] Fines up to 20,000,000 VND",
+    "p_fine_25": "[IT] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[IT] Fines up to 20,000,000 VND",
+    "feat_title_27": "[IT] Real-time Violation Detection",
+    "feat_title_28": "[IT] Instant Telegram Alerts",
+    "feat_title_29": "[IT] Intuitive Management Dashboard",
+    "feat_title_30": "[IT] Automated Violation Logs",
+    "feat_title_31": "[IT] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[IT] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[IT] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[IT] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[IT] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[IT] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[IT] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[IT] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[IT] Law No. 55/2010/QH12",
+    "law_name_40": "[IT] Decree 115/2018/ND-CP",
+    "law_name_41": "[IT] QCVN 8-3:2012/BYT",
+    "law_name_42": "[IT] Circular 30/2012/TT-BYT",
+    "law_name_43": "[IT] WHO Hand Hygiene 2019",
+    "law_name_44": "[IT] QCVN 8-1:2011/BYT",
+    "law_title_45": "[IT] 2010 Food Safety Law",
+    "law_title_46": "[IT] Food Safety Violation Penalties",
+    "law_title_47": "[IT] Physical Agent Limits",
+    "law_title_48": "[IT] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[IT] 7-Step Hand Washing Technique",
+    "law_title_50": "[IT] Microbiological Limits",
+    "law_desc_51": "[IT] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[IT] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[IT] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[IT] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[IT] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[IT] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[IT] Restaurants & Hotels",
+    "uc_name_58": "[IT] Eateries & Collective Kitchens",
+    "uc_name_59": "[IT] Food Factories",
+    "uc_name_60": "[IT] Schools & Canteens",
+    "uc_name_61": "[IT] Small Production Facilities",
+    "uc_desc_62": "[IT] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[IT] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[IT] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[IT] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[IT] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[IT] Humans are the #1 source of contamination",
+    "vande_h3_68": "[IT] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[IT] Legal & Financial Consequences",
+    "vande_p_70": "[IT] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[IT] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[IT] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[IT] Layer 01: Personnel",
+    "gp_h3_74": "[IT] PPE Control",
+    "gp_h3_75": "[IT] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[IT] Anti Cross-Contamination",
+    "gp_h3_77": "[IT] Restaurants & Hotels",
+    "gp_h3_78": "[IT] Eateries & Collective Kitchens",
+    "gp_h3_79": "[IT] Food Factories",
+    "gp_h3_80": "[IT] Schools & Canteens",
+    "gp_h3_81": "[IT] Small Production Facilities",
+    "gp_p_82": "[IT] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[IT] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[IT] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[IT] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[IT] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[IT] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[IT] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[IT] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[IT] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[IT] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[IT] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[IT] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[IT] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[IT] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[IT] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[IT] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[IT] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[IT] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[IT] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[IT] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[IT] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[IT] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[IT] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[IT] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[IT] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[IT] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[IT] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[IT] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[IT] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  },
+  "th": {
+    "sec_label_1": "[TH] The Real Problem",
+    "sec_label_2": "[TH] AI Solutions",
+    "sec_label_3": "[TH] Legal Foundation",
+    "sec_label_4": "[TH] Target Audience",
+    "sec_label_5": "[TH] The Invisible Risks",
+    "sec_label_6": "[TH] AI Implementation",
+    "sec_label_7": "[TH] Legal Foundation",
+    "sec_label_8": "[TH] Target Models",
+    "sec_title_9": "[TH] Food Safety Violations Aren't Always Supervised",
+    "sec_title_10": "[TH] Comprehensive 24/7 Automated Monitoring System",
+    "sec_title_11": "[TH] 100% Compliant with Vietnamese Legal Documents",
+    "sec_title_12": "[TH] Suitable for All Food Processing Facilities",
+    "sec_sub_13": "[TH] An 8-hour shift — managers can't be present 100% of the time. Risks occur when nobody is watching.",
+    "sec_sub_14": "[TH] VietFood Guard is built based on current legal regulations, ensuring your business is always compliant.",
+    "p_title_15": "[TH] Not Wearing Masks",
+    "p_title_16": "[TH] Wearing Jewelry While Processing",
+    "p_title_17": "[TH] Using Wrong Cutting Board Colors",
+    "p_title_18": "[TH] Lack of Protective Gear",
+    "p_desc_19": "[TH] The most common violation in kitchens. Risk of bacterial transmission via droplets directly into food.",
+    "p_desc_20": "[TH] Rings, bracelets, watches are leading physical contamination sources according to QCVN 8-3:2012/BYT.",
+    "p_desc_21": "[TH] Using raw meat boards to cut cooked food or vegetables — cause of Salmonella, E.coli cross-contamination.",
+    "p_desc_22": "[TH] No hats, no gloves in prep areas — direct violation of Article 26 of the 2010 Food Safety Law.",
+    "p_fine_23": "[TH] Fines up to 3,000,000 VND",
+    "p_fine_24": "[TH] Fines up to 20,000,000 VND",
+    "p_fine_25": "[TH] Mass poisoning: up to 150 million VND",
+    "p_fine_26": "[TH] Fines up to 20,000,000 VND",
+    "feat_title_27": "[TH] Real-time Violation Detection",
+    "feat_title_28": "[TH] Instant Telegram Alerts",
+    "feat_title_29": "[TH] Intuitive Management Dashboard",
+    "feat_title_30": "[TH] Automated Violation Logs",
+    "feat_title_31": "[TH] Full Vietnamese Legal Compliance",
+    "feat_title_32": "[TH] Easy to Deploy, No IT Needed",
+    "feat_desc_33": "[TH] Camera + YOLOv8 AI automatically detects: no masks, no hats, jewelry, wrong boards — in under 2 seconds.",
+    "feat_desc_34": "[TH] Upon detecting a violation, the system auto-captures evidence and sends a Telegram alert to managers — wherever they are.",
+    "feat_desc_35": "[TH] View all cameras live, daily violation stats, detailed logs per shift — all on a single screen.",
+    "feat_desc_36": "[TH] Stores entire violation history with time, type, employee name, area — for internal audits and inspections.",
+    "feat_desc_37": "[TH] Built strictly according to 2010 Food Safety Law, QCVN 8-3:2012/BYT, Decree 115/2018, and WHO Hand Hygiene 2019.",
+    "feat_desc_38": "[TH] Runs on standard Windows PCs with webcams. No expensive servers or specialized technicians needed. Installs in 10 minutes.",
+    "law_name_39": "[TH] Law No. 55/2010/QH12",
+    "law_name_40": "[TH] Decree 115/2018/ND-CP",
+    "law_name_41": "[TH] QCVN 8-3:2012/BYT",
+    "law_name_42": "[TH] Circular 30/2012/TT-BYT",
+    "law_name_43": "[TH] WHO Hand Hygiene 2019",
+    "law_name_44": "[TH] QCVN 8-1:2011/BYT",
+    "law_title_45": "[TH] 2010 Food Safety Law",
+    "law_title_46": "[TH] Food Safety Violation Penalties",
+    "law_title_47": "[TH] Physical Agent Limits",
+    "law_title_48": "[TH] Collective Kitchen Food Safety Conditions",
+    "law_title_49": "[TH] 7-Step Hand Washing Technique",
+    "law_title_50": "[TH] Microbiological Limits",
+    "law_desc_51": "[TH] Articles 25–28 define food safety conditions for processing areas and direct food handlers.",
+    "law_desc_52": "[TH] Fines from 500K to 150 million VND. Suspension of operations for 1–3 months.",
+    "law_desc_53": "[TH] Regulates hair, nails, jewelry — food handlers are the #1 hazard source.",
+    "law_desc_54": "[TH] One-way kitchen principle, mandatory sample retention in case of poisoning.",
+    "law_desc_55": "[TH] AI counts time and recognizes each WHO-standard hand washing movement.",
+    "law_desc_56": "[TH] Limits for Salmonella, E.coli, Staph aureus — basis for detection protocols.",
+    "uc_name_57": "[TH] Restaurants & Hotels",
+    "uc_name_58": "[TH] Eateries & Collective Kitchens",
+    "uc_name_59": "[TH] Food Factories",
+    "uc_name_60": "[TH] Schools & Canteens",
+    "uc_name_61": "[TH] Small Production Facilities",
+    "uc_desc_62": "[TH] Monitor kitchens, prep areas, and service continuously.",
+    "uc_desc_63": "[TH] Ensure standards when serving large numbers of diners.",
+    "uc_desc_64": "[TH] Monitor production lines, storage warehouses by shift.",
+    "uc_desc_65": "[TH] Protect students — the most vulnerable to poisoning.",
+    "uc_desc_66": "[TH] Low-cost solution, no dedicated IT team required.",
+    "vande_h3_67": "[TH] Humans are the #1 source of contamination",
+    "vande_h3_68": "[TH] The \"Silent\" Cross-Contamination Matrix",
+    "vande_h3_69": "[TH] Legal & Financial Consequences",
+    "vande_p_70": "[TH] \n              According to <strong>QCVN 8-3:2012/BYT</strong>, direct food handlers are the leading physical and microbiological agents[cite: 64, 397]. Behaviors like not wearing masks or exposed hair allow bacteria to spread via droplets and contact surfaces[cite: 66, 390].\n            ",
+    "vande_p_71": "[TH] \n              Using red boards (raw meat) to cut vegetables or cooked food is a \"classic\" error causing <strong>Salmonella and E.coli</strong> infections[cite: 155, 209]. Washing vegetables less than 3 times or cursorily cannot eliminate all parasite eggs according to standards[cite: 128, 132].\n            ",
+    "vande_p_72": "[TH] \n              Not just warnings, serious violations causing mass poisoning (≥5 people) can incur fines up to <strong>150 million VND</strong> and criminal prosecution under Article 317 of the Penal Code[cite: 57]. A 1-3 month suspension means bankruptcy for the chain.\n            ",
+    "gp_badge_73": "[TH] Layer 01: Personnel",
+    "gp_h3_74": "[TH] PPE Control",
+    "gp_h3_75": "[TH] WHO Standard Hand Hygiene",
+    "gp_h3_76": "[TH] Anti Cross-Contamination",
+    "gp_h3_77": "[TH] Restaurants & Hotels",
+    "gp_h3_78": "[TH] Eateries & Collective Kitchens",
+    "gp_h3_79": "[TH] Food Factories",
+    "gp_h3_80": "[TH] Schools & Canteens",
+    "gp_h3_81": "[TH] Small Production Facilities",
+    "gp_p_82": "[TH] \n              Automatically detects and alerts if employees violate Article 26 of the 2010 Food Safety Law[cite: 390]:\n            ",
+    "gp_p_83": "[TH] \n              AI counts time and accurately recognizes 7 hand washing movements per WHO 2019 guidelines[cite: 67, 68]:\n            ",
+    "gp_p_84": "[TH] \n              Uses AI to distinguish the standard 4-color board system to prevent Salmonella & E.coli[cite: 155]:\n            ",
+    "gp_p_85": "[TH] \n                Focuses on the professionalism of service staff and open kitchens. AI monitors forbidden behaviors like bare-hand portioning or double-dipping tasting spoons[cite: 194, 307].\n            ",
+    "gp_p_86": "[TH] \n                Strictly applies the one-way kitchen principle per Article 28. AI automatically reminds the mandatory <strong>100g/dish food sample retention</strong> process for 24-48h.\n            ",
+    "gp_p_87": "[TH] \n                Controls cold storage temperatures for large lines. AI alerts when fresh meat is left at room temperature for over 2 hours (Danger zone $5-60^\\circ C$)[cite: 164, 223].\n            ",
+    "gp_p_88": "[TH] \n                Protects the most sensitive groups. The AI system focuses on the <strong>7-step WHO hand washing technique</strong> [cite: 67] and hat/mask compliance for meal prep staff[cite: 66].\n            ",
+    "gp_p_89": "[TH] \n                Low-cost solution leveraging existing IP Cameras to control **FIFO (First In - First Out)** principles and expiration date labeling[cite: 230, 233].\n            ",
+    "li_text_91": "[TH] ❌ <strong style=\"color: var(--red);\">Physical contamination:</strong> Wearing jewelry, watches while processing[cite: 66, 390].",
+    "li_text_92": "[TH] ❌ <strong style=\"color: var(--red);\">Unhygienic behavior:</strong> Eating, chewing gum in the kitchen[cite: 311, 313].",
+    "li_text_93": "[TH] ❌ <strong style=\"color: var(--red);\">Standard violation:</strong> Smoking in kitchen/service areas[cite: 309].",
+    "li_text_94": "[TH] ❌ <strong style=\"color: var(--red);\">Cross-contamination:</strong> Double-dipping a used tasting spoon into the pot[cite: 321].",
+    "li_text_95": "[TH] ❌ <strong style=\"color: var(--red);\">Carelessness:</strong> Placing food directly on the floor (even briefly)[cite: 317].",
+    "li_text_96": "[TH] ❌ <strong style=\"color: var(--red);\">Dirty touching:</strong> Touching face or hair while carrying dishes[cite: 315].",
+    "li_text_97": "[TH] ❌ <strong style=\"color: var(--red);\">Dirty clearing:</strong> Using bare hands to scrape dirty dishes directly[cite: 323].",
+    "li_text_98": "[TH] ✅ Detects hair exposed outside protective hats",
+    "li_text_99": "[TH] ✅ Checks masks covering nose & mouth completely",
+    "li_text_100": "[TH] ✅ Alerts for missing gloves in prep areas",
+    "li_text_101": "[TH] ⏱️ Minimum 20-second countdown per wash",
+    "li_text_102": "[TH] 📷 Recognizes all 7 steps (palms, webs, nails, thumbs...)",
+    "li_text_103": "[TH] ⚠️ Instant alert if staff wash cursorily",
+    "li_text_104": "[TH] <a onclick=\"switchPage('giaiphap')\">24/7 Violation Detection</a>",
+    "li_text_105": "[TH] <a onclick=\"switchPage('giaiphap')\">Automated Telegram Alerts</a>",
+    "li_text_106": "[TH] <a onclick=\"switchPage('giaiphap')\">Multi-stream Monitoring Dashboard</a>",
+    "li_text_107": "[TH] <a onclick=\"switchPage('giaiphap')\">Violation Log Extraction</a>",
+    "li_text_108": "[TH] <a onclick=\"switchPage('phaply')\">MoH Compliance Consulting</a>",
+    "li_text_109": "[TH] <span class=\"ico\">📞</span> +84 975 937 976",
+    "li_text_110": "[TH] <span class=\"ico\">✉️</span> services.kimbaokbc@gmail.com",
+    "li_text_111": "[TH] <span class=\"ico\">📍</span> 128/2 Quang Trung St, Ward 10, Go Vap, Ho Chi Minh City, Vietnam"
+  }
+};
+
+// 2. HÀM CHUYỂN ĐỔI NGÔN NGỮ
+function changeLanguage(lang) {
+  localStorage.setItem('preferredLang', lang);
+  const elements = document.querySelectorAll('[data-i18n]');
+  
+  elements.forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (translations[lang] && translations[lang][key]) {
+      if (el.tagName === 'INPUT') {
+        el.placeholder = translations[lang][key];
+      } else {
+        el.innerHTML = translations[lang][key];
+      }
+    }
+  });
+}
+
+// 3. LẮNG NGHE SỰ KIỆN TỪ Ô CHỌN
+const langSelect = document.getElementById('lang-switcher');
+if(langSelect) {
+    langSelect.addEventListener('change', (e) => {
+        changeLanguage(e.target.value);
+    });
+}
+
+// 4. KIỂM TRA NGÔN NGỮ KHI VỪA MỞ TRANG
+window.addEventListener('DOMContentLoaded', () => {
+  const savedLang = localStorage.getItem('preferredLang') || 'vi';
+  if(langSelect) langSelect.value = savedLang;
+  changeLanguage(savedLang);
+});
+
+</script>
+
+<!-- FLOATING CONTACTS -->
+<div class="floating-contact">
+  <a href="#" class="fc-btn fc-review">
+    <span class="fc-text">ĐÁNH GIÁ</span>
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10H6v-2h12v2zm0-3H6V7h12v2z"/></svg>
+  </a>
+  <a href="https://t.me/" class="fc-btn fc-social">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+  </a>
+  <a href="#" class="fc-btn fc-social">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg" alt="Messenger">
+  </a>
+  <a href="#" class="fc-btn fc-social">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/9/91/Zalo_Logo.svg" alt="Zalo">
+  </a>
+</div>
+
+<script>
+tsParticles.load("tsparticles", {
+  fpsLimit: 60,
+  interactivity: {
+    events: {
+      onClick: { enable: true, mode: "push" },
+      onHover: { enable: false },
+      resize: true,
+    },
+    modes: {
+      push: { quantity: 4 },
+    },
+  },
+  particles: {
+    color: {
+      value: ["#16a34a", "#86efac", "#ffffff"],
+    },
+    links: {
+      color: "#16a34a",
+      distance: 150,
+      enable: true,
+      opacity: 0.6, // Tăng độ đậm đường nối
+      width: 1.5, // Tăng độ dày đường nối
+    },
+    move: {
+      direction: "none",
+      enable: true,
+      outModes: { default: "bounce" },
+      random: true,
+      speed: 0.4, // Giữ tốc độ chậm để mượt
+      straight: false,
+    },
+    number: {
+      density: { enable: true, area: 800 },
+      value: 30, // Giảm xuống còn 30 hạt để mượt tuyệt đối
+    },
+    opacity: {
+      value: { min: 0.3, max: 1 }, // Tăng độ đậm lên mức tối đa
+      animation: {
+        enable: true,
+        speed: 1.5,
+        minimumValue: 0.3,
+        sync: false,
+      },
+    },
+    shape: {
+      type: ["circle", "char"], 
+      options: {
+        char: [
+          { value: "🛡️", weight: "700" },
+          { value: "🥦", weight: "700" },
+          { value: "✅", weight: "700" }
+        ]
+      }
+    },
+    size: {
+      value: { min: 4, max: 10 }, // Tăng kích thước hạt để rõ nét hơn
+      random: true,
+    },
+  },
+  detectRetina: false,
+});
+</script>
+
+</body>
+</html>
